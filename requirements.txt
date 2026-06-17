@@ -1,15 +1,38 @@
+# Core
 Django==5.2.8
-pandas==2.3.3
-numpy==2.3.4
+django-environ==0.11.2
+
+# Data & ML (pinned for Python 3.10 compatibility)
+pandas==2.2.3
+numpy==1.26.4
 yfinance==0.2.66
-# scikit-learn==1.2.2  # Requires Visual C++ Build Tools for Python 3.14 - see note below
+scikit-learn==1.5.2
 joblib==1.4.2
-matplotlib==3.10.7
+scipy==1.13.1
+matplotlib==3.9.4
+
+# Web scraping & HTTP
 beautifulsoup4==4.14.2
 requests==2.32.5
 
-# NOTE: scikit-learn cannot be installed on Python 3.14 without Microsoft Visual C++ Build Tools
-# To fix: 
-# Option 1: Install Visual C++ Build Tools from https://visualstudio.microsoft.com/visual-cpp-build-tools/
-# Option 2: Switch to Python 3.12: https://www.python.org/downloads/
+# Auth
+django-allauth==65.3.0
 
+# Rate limiting
+django-ratelimit==4.1.0
+
+# Static files (production)
+whitenoise==6.8.2
+
+# Database (production)
+dj-database-url==2.3.0
+psycopg2-binary==2.9.10
+
+# Caching
+django-redis==5.4.0
+
+# Error monitoring
+sentry-sdk==2.19.2
+
+# Testing
+pytest-django==4.9.0
