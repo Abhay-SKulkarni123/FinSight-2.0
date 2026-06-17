@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    :root{
+      --bg:#0d1117;
+      --card:#15181d;
+      --muted:#9aa4ac;
+      --text:#e6eef1;
+      --accent-green:#18ff8f;
+      --accent-orange:#ff9b42;
+      --border:#23272b;
+    }
+    body{background:var(--bg);color:var(--text);padding-top:80px;}
+    .feature-container{max-width:1400px;margin:0 auto;padding:20px;}
+    .feature-header{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;}
+    .feature-header h1{color:var(--accent-orange);margin:0 0 8px 0;font-size:28px;}
+    .filters-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;}
+    .filter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-bottom:20px;}
+    .form-group label{display:block;margin-bottom:8px;color:var(--text);font-weight:600;font-size:14px;}
+    .form-group input,.form-group select{width:100%;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);}
+    .btn-primary{background:var(--accent-green);color:#000;border:none;padding:12px 24px;border-radius:8px;font-weight:600;cursor:pointer;margin-right:12px;}
+    .btn-secondary{background:var(--bg);color:var(--text);border:1px solid var(--border);padding:12px 24px;border-radius:8px;font-weight:600;cursor:pointer;}
+    .results-table{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;overflow-x:auto;}
+    table{width:100%;border-collapse:collapse;}
+    th,td{padding:12px;text-align:left;border-bottom:1px solid var(--border);}
+    th{color:var(--accent-orange);font-weight:600;}
+    .positive{color:var(--accent-green);}
+    .negative{color:#ff4444;}
+</style>
+
+<div class="feature-container">
+    <div style="margin-bottom:16px;">
+        <a href="{% url 'market_detail' market %}" style="color:var(--accent-green);text-decoration:none;font-weight:600;">← Back to {{ market_name }}</a>
+    </div>
+    <div class="feature-header">
+        <h1>{{ feature.icon }} {{ feature.name }} - {{ market_name }}</h1>
+        <p>Screen and filter {{ market_name }} assets based on your criteria</p>
+    </div>
+
+    <div class="filters-card">
+        <h3 style="color:var(--accent-green);margin-top:0;">Filter Criteria</h3>
+        <form id="screenerForm">
+            {% csrf_token %}
+            <div class="filter-grid">
+                <div class="form-group">
+                    <label>Price Range</label>
+                    <div style="display:flex;gap:8px;">
+                        <input type="number" placeholder="Min" id="priceMin" style="flex:1;">
+                        <input type="number" placeholder="Max" id="priceMax" style="flex:1;">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Trend Direction</label>
+                    <select id="changeDirection">
+                        <option value="">All</option>
+                        <option value="gainers">Gainers</option>
+                        <option value="losers">Losers</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>P/E Range</label>
+                    <div style="display:flex;gap:8px;">
+                        <input type="number" placeholder="Min" id="peMin" style="flex:1;">
+                        <input type="number" placeholder="Max" id="peMax" style="flex:1;">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Dividend Yield (min %)</label>
+                    <input type="number" step="0.1" placeholder="e.g. 2" id="divMin">
+                </div>
+                <div class="form-group" style="grid-column:1 / -1;">
+                    <label>Custom Tickers (comma separated)</label>
+                    <input type="text" id="customTickers" placeholder="Optional: AAPL, MSFT, TSLA">
+                </div>
+            </div>
+            <div style="margin-top:20px;">
+                <button type="submit" class="btn-primary">Run Screener</button>
+                <button type="button" class="btn-secondary" onclick="resetScreener()">Reset</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="results-table">
+        <h3 style="color:var(--accent-orange);margin-top:0;">Screener Results</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Price</th>
+                    <th>Change %</th>
+                    <th>Volume</th>
+                    <th>Market Cap</th>
+                    <th>P/E Ratio</th>
+                    <th>Dividend Yield</th>
+                </tr>
+            </thead>
+            <tbody id="screenerResults"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+const resultsBody = document.getElementById('screenerResults');
+const screenerForm = document.getElementById('screenerForm');
+
+function resetScreener() {
+    screenerForm.reset();
+    runScreener();
+}
+
+function renderResults(rows) {
+    resultsBody.innerHTML = '';
+    if (!rows.length) {
+        resultsBody.innerHTML = `
+            <tr>
+                <td colspan="7" class="empty-state" style="padding:40px 20px;">
+                    <div class="empty-state-icon">🔍</div>
+                    <div class="empty-state-title">No Results Found</div>
+                    <div class="empty-state-message">Try broadening your filters or remove the custom ticker list.</div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    rows.forEach(item => {
+        const tr = document.createElement('tr');
+        const changeClass = item.change_pct >= 0 ? 'positive' : 'negative';
+        tr.innerHTML = `
+            <td><strong>${item.ticker}</strong></td>
+            <td>$${item.price.toFixed(2)}</td>
+            <td class="${changeClass}">${item.change_pct >= 0 ? '+' : ''}${item.change_pct.toFixed(2)}%</td>
+            <td>${item.volume ? item.volume.toLocaleString() : '—'}</td>
+            <td>${item.market_cap ? '$' + (item.market_cap/1e9).toFixed(1) + 'B' : '—'}</td>
+            <td>${item.pe_ratio ? item.pe_ratio.toFixed(2) : '—'}</td>
+            <td>${item.dividend_yield != null ? item.dividend_yield.toFixed(2) + '%' : '—'}</td>
+        `;
+        resultsBody.appendChild(tr);
+    });
+}
+
+function runScreener() {
+    const filters = {
+        price_min: parseFloat(document.getElementById('priceMin').value) || null,
+        price_max: parseFloat(document.getElementById('priceMax').value) || null,
+        change_direction: document.getElementById('changeDirection').value,
+        pe_min: parseFloat(document.getElementById('peMin').value) || null,
+        pe_max: parseFloat(document.getElementById('peMax').value) || null,
+        dividend_min: parseFloat(document.getElementById('divMin').value) || null
+    };
+    const customRaw = document.getElementById('customTickers').value;
+    const tickers = customRaw ? customRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
+
+    resultsBody.innerHTML = `
+        <tr>
+            <td colspan="7" style="text-align:center;padding:30px;color:var(--muted);">
+                <span class="spinner" style="margin-right:8px;"></span>Fetching live data...
+            </td>
+        </tr>
+    `;
+
+    fetch(`/api/screener/?t=${Date.now()}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+        },
+        body: JSON.stringify({
+            market: "{{ market }}",
+            filters,
+            tickers
+        })
+    })
+    .then(res => res.json())
+    .then(payload => {
+        if (!payload.success) {
+            renderResults([]);
+            showToast('Screener', payload.error || 'Unable to screen assets right now.', 'error', 4000);
+            return;
+        }
+        renderResults(payload.results || []);
+        showToast('Screener', `Found ${payload.results.length} matches.`, 'success', 2000);
+    })
+    .catch(err => {
+        renderResults([]);
+        showToast('Network', err.message || 'Unable to reach screener service.', 'error', 4000);
+    });
+}
+
+screenerForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    runScreener();
+});
+
+runScreener();
+</script>
+{% endblock %}

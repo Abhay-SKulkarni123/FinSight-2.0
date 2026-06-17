@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    .page{padding-top:96px;width:95%;margin:0 auto;max-width:1200px;}
+    .intro{background:var(--card);border:1px solid var(--border);padding:22px;border-radius:12px;margin-bottom:20px;}
+    .intro h1{margin:0 0 8px 0;color:var(--accent-orange);font-size:20px;text-align:center;}
+    .intro p{margin:0;color:var(--muted);}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:stretch;}
+    .chart-wrap{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.03));border-radius:10px;overflow:hidden;border:1px solid var(--border);display:flex;flex-direction:column;}
+    .chart-top{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;gap:8px;border-bottom:1px solid var(--border);background:transparent;}
+    .chart-title{font-weight:700;color:var(--accent-green);font-size:14px;}
+    .chart-sub{color:var(--muted);font-size:12px;margin-left:8px;}
+    .icon-btn{background:var(--card);border:1px solid var(--border);padding:8px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--text);}
+    .icon-btn:hover{transform:translateY(-2px);}
+    @media (max-width:768px){
+        .grid{grid-template-columns:1fr !important;}
+        .feature-icons{justify-content:center;}
+        .feature-icons > a > div{width:120px;height:120px;}
+        .chart-body{height:300px !important;}
+        .intro h1{font-size:20px;}
+        .intro p{font-size:14px;line-height:1.6;}
+    }
+</style>
+<main class="page">
+    <section class="intro" style="background:var(--card); border:1px solid var(--border); padding:24px; border-radius:12px; margin-bottom:20px;">
+        <h1 style="color:var(--accent-orange);margin-top:0;">{{ page_title }}</h1>
+        <p style="color:var(--text); line-height:1.8; font-size:16px; margin:0;">{{ page_description }}</p>
+    </section>
+
+    <section class="grid" id="chartGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:32px;">
+        {% for chart in charts %}
+        <div class="chart-wrap" style="background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden;">
+            <div class="chart-top" style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-bottom:1px solid var(--border);">
+                <div>
+                    <span class="chart-title">{{ chart.display }}</span>
+                    <span class="chart-sub"> — {{ market_name|upper }}</span>
+                </div>
+                <div>
+                    <button class="icon-btn" onclick="expandChart('{{ chart.symbol }}', '{{ chart.display }}')" aria-label="Expand {{ chart.display }} chart">⤢</button>
+                </div>
+            </div>
+            <div class="chart-body" id="tv_{{ chart.safe_id }}" style="height:400px;position:relative;">
+                <div class="loading-overlay" id="loading_{{ chart.safe_id }}">
+                    <div style="text-align:center;">
+                        <div class="spinner" style="margin:0 auto 12px;"></div>
+                        <div style="color:var(--muted);font-size:14px;">Loading chart...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </section>
+
+    <section class="feature-icons" style="display:flex; flex-wrap:wrap; gap:16px; justify-content:center; margin-top:32px;">
+        {% for f in features %}
+        <a href="{% url 'feature_view' market_name f.id %}" style="text-decoration:none;" class="fade-in" aria-label="Open {{ f.name }} feature">
+            <div style="width:140px; height:140px; background:var(--card); border:1px solid var(--border); border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);" 
+                 onmouseover="this.style.transform='translateY(-6px) scale(1.02)'; this.style.borderColor='var(--accent-green)'; this.style.boxShadow='0 8px 24px rgba(24, 255, 143, 0.2)';" 
+                 onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.borderColor='var(--border)'; this.style.boxShadow='none';"
+                 role="button"
+                 tabindex="0">
+                <div style="font-size:48px; margin-bottom:8px; transition:transform 0.2s;">{{ f.icon }}</div>
+                <span style="font-size:14px; font-weight:600; color:var(--text); text-align:center;">{{ f.name }}</span>
+            </div>
+        </a>
+        {% endfor %}
+    </section>
+
+    <div id="overlay" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:90%; height:60%; background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.7); flex-direction:column; z-index:1500;">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 18px; border-bottom:1px solid var(--border);">
+            <div id="overlayTitle"></div>
+            <button class="icon-btn" onclick="closeOverlay()" aria-label="Close chart overlay">−</button>
+        </div>
+        <div id="overlayBody" style="flex:1;"></div>
+    </div>
+
+    <script src="https://s3.tradingview.com/tv.js"></script>
+    <script>
+        let overlayWidget = null;
+
+        function waitForTradingView(callback) {
+            if (typeof TradingView !== 'undefined') {
+                callback();
+            } else {
+                setTimeout(() => waitForTradingView(callback), 100);
+            }
+        }
+
+        function loadCharts() {
+            waitForTradingView(function() {
+                {% for chart in charts %}
+                const container_{{ chart.safe_id }} = document.getElementById("tv_{{ chart.safe_id }}");
+                const loading_{{ chart.safe_id }} = document.getElementById("loading_{{ chart.safe_id }}");
+                
+                try {
+                    new TradingView.widget({
+                        width: "100%",
+                        height: 400,
+                        symbol: "{{ chart.symbol }}",
+                        interval: "60",
+                        timezone: "Etc/UTC",
+                        theme: "dark",
+                        style: "1",
+                        locale: "en",
+                        toolbar_bg: "#111",
+                        enable_publishing: false,
+                        container_id: "tv_{{ chart.safe_id }}",
+                        onchartready: function() {
+                            if (loading_{{ chart.safe_id }}) {
+                                loading_{{ chart.safe_id }}.style.display = 'none';
+                            }
+                        }
+                    });
+                    // Hide loading after 3 seconds max
+                    setTimeout(function() {
+                        if (loading_{{ chart.safe_id }}) {
+                            loading_{{ chart.safe_id }}.style.display = 'none';
+                        }
+                    }, 3000);
+                } catch (e) {
+                    if (loading_{{ chart.safe_id }}) loading_{{ chart.safe_id }}.style.display = 'none';
+                    if (container_{{ chart.safe_id }}) {
+                        container_{{ chart.safe_id }}.innerHTML = '<div class="fade-in" style="padding:20px;color:var(--muted);text-align:center;">Chart unavailable for {{ chart.display }}</div>';
+                    }
+                }
+                {% endfor %}
+            });
+        }
+
+        function expandChart(sym, displayName){
+            document.getElementById('overlay').style.display='flex';
+            document.getElementById('overlayTitle').textContent = (displayName || sym) + ' — {{ market_name|upper }}';
+            const container = document.getElementById('overlayBody');
+            container.innerHTML = '';
+            
+            waitForTradingView(function() {
+                try {
+                    overlayWidget = new TradingView.widget({
+                        width: "100%",
+                        height: "100%",
+                        symbol: sym,
+                        interval: "60",
+                        timezone: "Etc/UTC",
+                        theme: "dark",
+                        style: "1",
+                        locale: "en",
+                        toolbar_bg: "#111",
+                        enable_publishing: false,
+                        container_id: container.id
+                    });
+                } catch (e) {
+                    container.innerHTML = '<div style="padding:20px;color:var(--muted);text-align:center;">Chart unavailable for ' + (displayName || sym) + '</div>';
+                }
+            });
+        }
+
+        function closeOverlay(){
+            document.getElementById('overlay').style.display='none';
+            overlayWidget = null;
+        }
+
+        // Load charts when page is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadCharts);
+        } else {
+            loadCharts();
+        }
+    </script>
+</main>
+{% endblock %}

@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    :root{
+      --bg:#0d1117;
+      --card:#15181d;
+      --muted:#9aa4ac;
+      --text:#e6eef1;
+      --accent-green:#18ff8f;
+      --accent-orange:#ff9b42;
+      --border:#23272b;
+    }
+    body{background:var(--bg);color:var(--text);padding-top:80px;}
+    .feature-container{max-width:1400px;margin:0 auto;padding:20px;}
+    .feature-header{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;}
+    .feature-header h1{color:var(--accent-orange);margin:0 0 8px 0;font-size:28px;}
+    .construction-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;}
+    .form-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;}
+    .form-group{margin-bottom:20px;}
+    .form-group label{display:block;margin-bottom:8px;color:var(--text);font-weight:600;}
+    .form-group input,.form-group select{width:100%;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);}
+    .btn-primary{background:var(--accent-green);color:#000;border:none;padding:12px 24px;border-radius:8px;font-weight:600;cursor:pointer;}
+    .allocation-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;}
+    .allocation-item{margin-bottom:20px;}
+    .allocation-header{display:flex;justify-content:space-between;margin-bottom:8px;}
+    .allocation-bar{height:16px;background:var(--bg);border-radius:8px;overflow:hidden;}
+    .allocation-fill{height:100%;background:var(--accent-green);transition:width 0.3s;}
+</style>
+
+<div class="feature-container">
+    <div style="margin-bottom:16px;">
+        <a href="{% url 'market_detail' market %}" style="color:var(--accent-green);text-decoration:none;font-weight:600;">← Back to {{ market_name }}</a>
+    </div>
+    <div class="feature-header">
+        <h1>{{ feature.icon }} {{ feature.name }} - {{ market_name }}</h1>
+        <p>Build optimized portfolios with strategic asset allocation for {{ market_name }}</p>
+    </div>
+
+    <div class="construction-grid">
+        <div class="form-card">
+            <h3 style="color:var(--accent-green);margin-top:0;">Portfolio Builder</h3>
+            <form id="constructionForm">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label>Investment Amount</label>
+                    <input type="number" placeholder="$100,000" id="investmentAmount" required>
+                </div>
+                <div class="form-group">
+                    <label>Tickers to include</label>
+                    <textarea id="customTickers" placeholder="e.g. AAPL, MSFT, TSLA" style="width:100%;min-height:80px;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);"></textarea>
+                    <small style="color:var(--muted);display:block;margin-top:6px;">Leave blank to use {{ market_name }} defaults. Supports up to 10 symbols.</small>
+                </div>
+                <div class="form-group">
+                    <label>Risk Tolerance</label>
+                    <select id="riskTolerance" required>
+                        <option value="conservative">Conservative</option>
+                        <option value="moderate">Moderate</option>
+                        <option value="aggressive">Aggressive</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Investment Horizon</label>
+                    <select id="horizon" required>
+                        <option value="short">Short Term (1-3 years)</option>
+                        <option value="medium">Medium Term (3-7 years)</option>
+                        <option value="long">Long Term (7+ years)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Rebalancing Frequency</label>
+                    <select id="rebalance" required>
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                        <option value="annually">Annually</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary">Generate Portfolio</button>
+            </form>
+        </div>
+
+        <div class="allocation-card">
+            <h3 style="color:var(--accent-orange);margin-top:0;">Suggested Allocation</h3>
+            <div id="allocationResults">
+                <div class="allocation-item">
+                    <div class="allocation-header">
+                        <span>Large Cap Stocks</span>
+                        <span>40%</span>
+                    </div>
+                    <div class="allocation-bar">
+                        <div class="allocation-fill" style="width:40%;"></div>
+                    </div>
+                </div>
+                <div class="allocation-item">
+                    <div class="allocation-header">
+                        <span>Mid Cap Stocks</span>
+                        <span>25%</span>
+                    </div>
+                    <div class="allocation-bar">
+                        <div class="allocation-fill" style="width:25%;background:var(--accent-orange);"></div>
+                    </div>
+                </div>
+                <div class="allocation-item">
+                    <div class="allocation-header">
+                        <span>Bonds</span>
+                        <span>20%</span>
+                    </div>
+                    <div class="allocation-bar">
+                        <div class="allocation-fill" style="width:20%;background:var(--muted);"></div>
+                    </div>
+                </div>
+                <div class="allocation-item">
+                    <div class="allocation-header">
+                        <span>Commodities</span>
+                        <span>10%</span>
+                    </div>
+                    <div class="allocation-bar">
+                        <div class="allocation-fill" style="width:10%;background:var(--accent-green);"></div>
+                    </div>
+                </div>
+                <div class="allocation-item">
+                    <div class="allocation-header">
+                        <span>Cash</span>
+                        <span>5%</span>
+                    </div>
+                    <div class="allocation-bar">
+                        <div class="allocation-fill" style="width:5%;background:var(--border);"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-card">
+        <h3 style="color:var(--accent-green);margin-top:0;">Recommended Positions</h3>
+        <table style="width:100%;border-collapse:collapse;">
+            <thead>
+                <tr style="border-bottom:1px solid var(--border);">
+                    <th style="padding:12px;text-align:left;color:var(--accent-orange);">Symbol</th>
+                    <th style="padding:12px;text-align:left;color:var(--accent-orange);">Allocation</th>
+                    <th style="padding:12px;text-align:left;color:var(--accent-orange);">Amount</th>
+                    <th style="padding:12px;text-align:left;color:var(--accent-orange);">Rationale</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ticker in tickers|slice:":6" %}
+                <tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:12px;"><strong>{{ ticker|slice:":10" }}</strong></td>
+                    <td style="padding:12px;">{{ forloop.counter|add:10|floatformat:1 }}%</td>
+                    <td style="padding:12px;">${{ forloop.counter|add:10000|floatformat:2 }}</td>
+                    <td style="padding:12px;color:var(--muted);">Strong fundamentals, good growth potential</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+const defaultTickers = [{% for ticker in tickers %}'{{ ticker }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+
+document.getElementById('constructionForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const investmentAmount = document.getElementById('investmentAmount').value;
+    const riskTolerance = document.getElementById('riskTolerance').value;
+    const customTickerInput = document.getElementById('customTickers').value;
+    const parsedTickers = customTickerInput.split(',').map(t => t.trim()).filter(Boolean);
+    const tickers = parsedTickers.length ? parsedTickers : defaultTickers;
+    
+    const submitBtn = document.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner" style="margin-right:8px;"></span>Optimizing...';
+    
+    fetch('/api/optimize/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+        },
+        body: JSON.stringify({
+            tickers: tickers.slice(0, 10),
+            risk_tolerance: riskTolerance,
+            investment_amount: parseFloat(investmentAmount) || 100000
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Generate Portfolio';
+        
+        if (data.success) {
+            const allocationDiv = document.getElementById('allocationResults');
+            allocationDiv.innerHTML = '';
+            
+            // Add allocation items
+            for (const [ticker, info] of Object.entries(data.allocation)) {
+                const item = document.createElement('div');
+                item.className = 'allocation-item';
+                item.innerHTML = `
+                    <div class="allocation-header">
+                        <span>${ticker}</span>
+                        <span>${info.percentage}%</span>
+                    </div>
+                    <div class="allocation-bar">
+                        <div class="allocation-fill" style="width:${info.percentage}%;"></div>
+                    </div>
+                `;
+                allocationDiv.appendChild(item);
+            }
+            
+            // Update recommended positions table
+            const tableBody = document.querySelector('.form-card table tbody');
+            if (tableBody) {
+                tableBody.innerHTML = '';
+                let rowNum = 0;
+                for (const [ticker, info] of Object.entries(data.allocation)) {
+                    rowNum++;
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td style="padding:12px;"><strong>${ticker}</strong></td>
+                        <td style="padding:12px;">${info.percentage}%</td>
+                        <td style="padding:12px;">$${info.amount.toFixed(2)}</td>
+                        <td style="padding:12px;color:var(--muted);">ML-optimized allocation based on risk-return analysis</td>
+                    `;
+                    tableBody.appendChild(row);
+                }
+            }
+            
+            // Show portfolio metrics
+            alert(`Portfolio Optimized!\n\nExpected Return: ${data.expected_return}%\nExpected Volatility: ${data.expected_volatility}%\nSharpe Ratio: ${data.sharpe_ratio}`);
+        } else {
+            alert('Error: ' + (data.error || 'Unable to optimize portfolio'));
+        }
+    })
+    .catch(error => {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Generate Portfolio';
+        alert('Error: ' + (error.message || 'Failed to optimize portfolio'));
+    });
+});
+</script>
+{% endblock %}
+

@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    :root{
+      --bg:#0d1117;
+      --card:#15181d;
+      --muted:#9aa4ac;
+      --text:#e6eef1;
+      --accent-green:#18ff8f;
+      --accent-orange:#ff9b42;
+      --border:#23272b;
+    }
+    body{background:var(--bg);color:var(--text);padding-top:80px;}
+    .feature-container{max-width:1400px;margin:0 auto;padding:20px;}
+    .feature-header{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;}
+    .feature-header h1{color:var(--accent-orange);margin:0 0 8px 0;font-size:28px;}
+    .comparison-controls{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;}
+    .comparison-controls input,.comparison-controls select{width:100%;padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);}
+    .comparison-table{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;overflow-x:auto;margin-bottom:24px;}
+    table{width:100%;border-collapse:collapse;}
+    th,td{padding:12px;text-align:left;border-bottom:1px solid var(--border);}
+    th{color:var(--accent-orange);font-weight:600;}
+    .chart-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;}
+    .chart-card canvas{height:380px;}
+    .btn-primary{background:var(--accent-green);color:#000;border:none;padding:12px 24px;border-radius:8px;font-weight:600;cursor:pointer;margin-top:12px;}
+    .badge{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;}
+    .positive{color:var(--accent-green);}
+    .negative{color:#ff4444;}
+</style>
+
+<div class="feature-container">
+    <div style="margin-bottom:16px;">
+        <a href="{% url 'market_detail' market %}" style="color:var(--accent-green);text-decoration:none;font-weight:600;">← Back to {{ market_name }}</a>
+    </div>
+    <div class="feature-header">
+        <h1>{{ feature.icon }} {{ feature.name }} - {{ market_name }}</h1>
+        <p>Benchmark up to three symbols head-to-head with synchronized charts, valuation metrics, and ML momentum indicators.</p>
+    </div>
+
+    <div class="comparison-controls">
+        <form id="comparisonForm">
+            {% csrf_token %}
+            <label style="display:block;font-weight:600;margin-bottom:8px;">Tickers (up to 3)</label>
+            <input type="text" id="compareTickers" placeholder="e.g. AAPL, MSFT, TSLA" value="{{ display_tickers|slice:':3'|join:', ' }}">
+            <label style="display:block;font-weight:600;margin:16px 0 8px;">Time Horizon</label>
+            <select id="comparePeriod">
+                <option value="1m">1 Month</option>
+                <option value="3m" selected>3 Months</option>
+                <option value="6m">6 Months</option>
+                <option value="1y">1 Year</option>
+            </select>
+            <button type="submit" class="btn-primary">Compare</button>
+        </form>
+    </div>
+
+    <div class="comparison-table">
+        <h3 style="color:var(--accent-orange);margin-top:0;">Key Metrics</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Price</th>
+                    <th>Change %</th>
+                    <th>Market Cap</th>
+                    <th>P/E</th>
+                    <th>Dividend</th>
+                    <th>52W Range</th>
+                    <th>RSI</th>
+                </tr>
+            </thead>
+            <tbody id="comparisonTableBody">
+                <tr><td colspan="8" style="padding:24px;text-align:center;color:var(--muted);">Run a comparison to populate this table.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+        <div class="chart-card">
+        <div style="color:var(--accent-orange);font-weight:600;margin-bottom:12px;">Normalized Price Performance</div>
+        <canvas id="comparisonChart"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const comparisonForm = document.getElementById('comparisonForm');
+const tableBody = document.getElementById('comparisonTableBody');
+let comparisonChart;
+
+function renderTable(assets) {
+    if (!assets || !assets.length) {
+        tableBody.innerHTML = '<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--muted);">No data available.</td></tr>';
+        return;
+    }
+    tableBody.innerHTML = '';
+    assets.forEach(asset => {
+        const changeClass = asset.change_pct >= 0 ? 'positive' : 'negative';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${asset.ticker}</strong></td>
+            <td>$${asset.price.toFixed(2)}</td>
+            <td class="${changeClass}">${asset.change_pct >= 0 ? '+' : ''}${asset.change_pct.toFixed(2)}%</td>
+            <td>${asset.market_cap ? '$' + (asset.market_cap/1e9).toFixed(1) + 'B' : '—'}</td>
+            <td>${asset.pe_ratio ? asset.pe_ratio.toFixed(2) : '—'}</td>
+            <td>${asset.dividend_yield != null ? asset.dividend_yield.toFixed(2) + '%' : '—'}</td>
+            <td>${asset.fifty_two_week_low ? '$' + asset.fifty_two_week_low.toFixed(2) : '—'} — ${asset.fifty_two_week_high ? '$' + asset.fifty_two_week_high.toFixed(2) : '—'}</td>
+            <td>${asset.rsi ? asset.rsi.toFixed(1) : '—'}</td>
+        `;
+        tableBody.appendChild(tr);
+    });
+}
+
+function renderChart(chartData) {
+    if (!chartData || !chartData.labels || !chartData.series) {
+        return;
+    }
+    const ctx = document.getElementById('comparisonChart').getContext('2d');
+    if (comparisonChart) comparisonChart.destroy();
+    comparisonChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: chartData.labels,
+            datasets: chartData.series.map((series, idx) => ({
+                label: series.label,
+                data: series.data,
+                borderWidth: 2,
+                borderColor: ['#18ff8f','#ff9b42','#57b6fe','#c084fc'][idx % 4],
+                backgroundColor: 'transparent',
+                tension: 0.25
+            }))
+        },
+        options: {
+            plugins: { legend: { position: 'bottom', labels: { color: 'var(--muted)' } } },
+            scales: {
+                x: { ticks: { color: 'var(--muted)' } },
+                y: { ticks: { color: 'var(--muted)' } }
+            }
+        }
+    });
+}
+
+function runComparison() {
+    const raw = document.getElementById('compareTickers').value;
+    const tickers = raw.split(',').map(t => t.trim()).filter(Boolean).slice(0, 3);
+    if (tickers.length < 2) {
+        showToast('Compare', 'Please enter at least two tickers (comma separated).', 'warning', 3000);
+        return;
+    }
+    const period = document.getElementById('comparePeriod').value;
+    tableBody.innerHTML = '<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--muted);"><span class="spinner" style="margin-right:8px;"></span>Loading...</td></tr>';
+
+    fetch('/api/comparison/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+        },
+        body: JSON.stringify({ tickers, period })
+    })
+    .then(res => res.json())
+    .then(payload => {
+        if (!payload.success) {
+            tableBody.innerHTML = '<tr><td colspan="8" style="padding:24px;text-align:center;color:#ff7575;">' + (payload.error || 'Unable to compare those assets.') + '</td></tr>';
+            return;
+        }
+        renderTable(payload.assets || []);
+        renderChart(payload.chart);
+        showToast('Compare', 'Comparison updated.', 'success', 2000);
+    })
+    .catch(err => {
+        tableBody.innerHTML = '<tr><td colspan="8" style="padding:24px;text-align:center;color:#ff7575;">' + (err.message || 'Network issue.') + '</td></tr>';
+    });
+}
+
+comparisonForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    runComparison();
+});
+
+function safeAttachTickerInput(input) {
+    if (!input) return;
+    if (window.attachTickerAutocomplete) {
+        window.attachTickerAutocomplete(input);
+    } else {
+        document.addEventListener('ticker-helper-ready', () => window.attachTickerAutocomplete && window.attachTickerAutocomplete(input), { once: true });
+    }
+}
+
+safeAttachTickerInput(document.getElementById('compareTickers'));
+setTimeout(runComparison, 400);
+</script>
+{% endblock %}

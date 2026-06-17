@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+    :root{
+      --bg:#0d1117;
+      --card:#15181d;
+      --muted:#9aa4ac;
+      --text:#e6eef1;
+      --accent-green:#18ff8f;
+      --accent-orange:#ff9b42;
+      --border:#23272b;
+    }
+    body{background:var(--bg);color:var(--text);padding-top:80px;}
+    .feature-container{max-width:1400px;margin:0 auto;padding:20px;}
+    .feature-header{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;}
+    .feature-header h1{color:var(--accent-orange);margin:0 0 8px 0;font-size:28px;}
+    .analysis-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-bottom:24px;}
+    .analysis-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;}
+    .analysis-title{color:var(--accent-green);font-size:18px;margin-bottom:12px;}
+    .chart-container{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;}
+    .chart-wrapper{height:400px;background:var(--bg);border-radius:8px;}
+    .insights-list{list-style:none;padding:0;}
+    .insights-list li{padding:12px;margin-bottom:8px;background:var(--bg);border-left:3px solid var(--accent-green);border-radius:4px;}
+</style>
+
+<div class="feature-container">
+    <div style="margin-bottom:16px;">
+        <a href="{% url 'market_detail' market %}" style="color:var(--accent-green);text-decoration:none;font-weight:600;">← Back to {{ market_name }}</a>
+    </div>
+    <div class="feature-header">
+        <h1>{{ feature.icon }} {{ feature.name }} - {{ market_name }}</h1>
+        <p>Comprehensive market analysis and insights for {{ market_name }}</p>
+    </div>
+
+    <div class="analysis-grid">
+        <div class="analysis-card">
+            <div class="analysis-title">Market Overview</div>
+            <div style="font-size:32px;font-weight:700;color:var(--accent-green);margin:12px 0;">Bullish</div>
+            <p style="color:var(--muted);margin:0;">{{ market_name }} market showing strong upward momentum with increased trading volume and positive sentiment indicators.</p>
+        </div>
+        <div class="analysis-card">
+            <div class="analysis-title">Market Cap</div>
+            <div style="font-size:32px;font-weight:700;color:var(--accent-green);margin:12px 0;">$2.5T</div>
+            <p style="color:var(--muted);margin:0;">Total market capitalization across all {{ market_name }} assets.</p>
+        </div>
+        <div class="analysis-card">
+            <div class="analysis-title">24h Volume</div>
+            <div style="font-size:32px;font-weight:700;color:var(--accent-green);margin:12px 0;">$450B</div>
+            <p style="color:var(--muted);margin:0;">Total trading volume in the last 24 hours.</p>
+        </div>
+        <div class="analysis-card">
+            <div class="analysis-title">Volatility Index</div>
+            <div style="font-size:32px;font-weight:700;color:var(--accent-orange);margin:12px 0;">18.5</div>
+            <p style="color:var(--muted);margin:0;">Moderate volatility - suitable for most investors.</p>
+        </div>
+        <div class="analysis-card">
+            <div class="analysis-title">Top Gainers</div>
+            <div style="font-size:32px;font-weight:700;color:var(--accent-green);margin:12px 0;">+12.5%</div>
+            <p style="color:var(--muted);margin:0;">Average gain for top performing assets.</p>
+        </div>
+        <div class="analysis-card">
+            <div class="analysis-title">Top Losers</div>
+            <div style="font-size:32px;font-weight:700;color:#ff4444;margin:12px 0;">-8.2%</div>
+            <p style="color:var(--muted);margin:0;">Average decline for underperforming assets.</p>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <div class="analysis-title">Market Trend Analysis</div>
+        <div id="trendChart" class="chart-wrapper"></div>
+    </div>
+
+    <div class="analysis-card">
+        <div class="analysis-title">Key Insights</div>
+        <ul class="insights-list">
+            <li><strong>Technical Analysis:</strong> {{ market_name }} is currently trading above key support levels, indicating bullish sentiment. RSI is at 62, showing healthy momentum without being overbought.</li>
+            <li><strong>Fundamental Analysis:</strong> Strong earnings reports and positive economic indicators support continued growth in the {{ market_name }} sector.</li>
+            <li><strong>Market Sentiment:</strong> Investor confidence remains high with institutional buying pressure evident in recent trading patterns.</li>
+            <li><strong>Risk Factors:</strong> Monitor for potential regulatory changes and global economic indicators that could impact {{ market_name }} performance.</li>
+            <li><strong>Opportunities:</strong> Emerging technologies and market expansion present growth opportunities for savvy investors.</li>
+        </ul>
+    </div>
+
+    <div class="analysis-card">
+        <div class="analysis-title">Sector Performance</div>
+        <table style="width:100%;border-collapse:collapse;margin-top:16px;">
+            <thead>
+                <tr style="border-bottom:1px solid var(--border);">
+                    <th style="padding:12px;text-align:left;color:var(--accent-orange);">Sector</th>
+                    <th style="padding:12px;text-align:left;color:var(--accent-orange);">Performance</th>
+                    <th style="padding:12px;text-align:left;color:var(--accent-orange);">Change</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:12px;">Technology</td>
+                    <td style="padding:12px;color:var(--accent-green);">+15.2%</td>
+                    <td style="padding:12px;color:var(--accent-green);">↑</td>
+                </tr>
+                <tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:12px;">Finance</td>
+                    <td style="padding:12px;color:var(--accent-green);">+8.5%</td>
+                    <td style="padding:12px;color:var(--accent-green);">↑</td>
+                </tr>
+                <tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:12px;">Healthcare</td>
+                    <td style="padding:12px;color:var(--accent-green);">+6.3%</td>
+                    <td style="padding:12px;color:var(--accent-green);">↑</td>
+                </tr>
+                <tr style="border-bottom:1px solid var(--border);">
+                    <td style="padding:12px;">Energy</td>
+                    <td style="padding:12px;color:#ff4444;">-2.1%</td>
+                    <td style="padding:12px;color:#ff4444;">↓</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://s3.tradingview.com/tv.js"></script>
+<script>
+// Wait for TradingView to load and ensure tickers exist
+function loadTrendChart() {
+    if (typeof TradingView === 'undefined') {
+        setTimeout(loadTrendChart, 100);
+        return;
+    }
+    
+    const ticker = "{{ tickers.0|default:'SP:SPX' }}";
+    const chartContainer = document.getElementById('trendChart');
+    
+    if (chartContainer && ticker) {
+        // Show loading state
+        chartContainer.innerHTML = '<div class="chart-skeleton" style="height:400px;"></div>';
+        
+        try {
+            new TradingView.widget({
+                width: "100%",
+                height: 400,
+                symbol: ticker.includes(":") ? ticker : "SP:SPX",
+                interval: "D",
+                timezone: "Etc/UTC",
+                theme: "dark",
+                style: "1",
+                locale: "en",
+                toolbar_bg: "#111",
+                enable_publishing: false,
+                studies: ["Volume@tv-basicstudies", "MA Cross@tv-basicstudies"],
+                container_id: "trendChart",
+                onchartready: function() {
+                    // Chart loaded successfully
+                }
+            });
+        } catch (e) {
+            chartContainer.innerHTML = '<div class="fade-in" style="padding:20px;color:var(--muted);text-align:center;">Unable to load chart for ' + (ticker.split(':').pop() || ticker) + '. Please try a different ticker.</div>';
+        }
+    }
+}
+
+// Load chart when page is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadTrendChart);
+} else {
+    loadTrendChart();
+}
+</script>
+{% endblock %}
+
