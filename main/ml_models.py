@@ -38,9 +38,25 @@ ML_CACHE_DIR.mkdir(exist_ok=True)
 
 
 def clean_ticker(ticker: str) -> str:
-    """Normalize ticker for yfinance."""
+    """Normalize ticker for yfinance — handles US, crypto, and Indian (NSE/BSE) tickers."""
     t = ticker.strip().split(":")[-1]
     upper = t.upper()
+
+    # Indian indices (exact match)
+    indian_index_map = {
+        'NIFTY50': '^NSEI', 'NIFTY': '^NSEI',
+        'SENSEX': '^BSESN',
+        'NIFTYBANK': '^NSEBANK', 'BANKNIFTY': '^NSEBANK',
+        'NIFTYNEXT50': '^NSEMDCP50',
+    }
+    if upper in indian_index_map:
+        return indian_index_map[upper]
+
+    # Already has NSE/BSE suffix or is an index — leave as-is
+    if upper.endswith('.NS') or upper.endswith('.BO') or t.startswith('^'):
+        return t
+
+    # Crypto
     crypto_map = {'BTCUSD': 'BTC-USD', 'ETHUSD': 'ETH-USD', 'SOLUSD': 'SOL-USD',
                   'BNBUSDT': 'BNB-USD', 'BTCUSDT': 'BTC-USD', 'ETHUSDT': 'ETH-USD'}
     if upper in crypto_map:
@@ -49,7 +65,17 @@ def clean_ticker(ticker: str) -> str:
         return upper.replace('USDT', '-USD')
     if upper.endswith('USD') and '-' not in upper:
         return upper[:-3] + '-USD'
+
     return t
+
+
+def is_indian_ticker(ticker: str) -> bool:
+    """Check if a ticker belongs to an Indian exchange."""
+    t = ticker.strip().upper()
+    return t.endswith('.NS') or t.endswith('.BO') or t in (
+        'NIFTY50', 'NIFTY', 'SENSEX', 'NIFTYBANK', 'BANKNIFTY', 'NIFTYNEXT50',
+        '^NSEI', '^BSESN', '^NSEBANK', '^NSEMDCP50'
+    )
 
 
 class PricePredictor:

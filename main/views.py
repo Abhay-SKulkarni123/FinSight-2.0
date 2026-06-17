@@ -73,6 +73,15 @@ MARKETS = {
         "tickers": ["CBOT:ZC1!", "CBOT:ZS1!", "CBOT:ZW1!", "ICE:KC1!", "ICE:CC1!", "ICE:CT1!", "ICE:SB1!", "ICE:OJ1!"],
         "description": "Agricultural and soft commodities",
         "detailed_description": "Agricultural commodities include grains (corn, wheat, soybeans), soft commodities (coffee, cocoa, sugar, cotton), and livestock. These markets are influenced by weather patterns, crop reports, global demand, and supply chain disruptions. Commodity prices can be volatile due to seasonal factors and geopolitical events. Trading agricultural commodities requires understanding growing seasons, USDA reports, and global trade dynamics. Commodities offer portfolio diversification and can serve as inflation hedges. They're essential for understanding global economic health and food security trends."
+    },
+    "indian_markets": {
+        "name": "Indian Markets",
+        "tickers": [
+            "NSE:RELIANCE", "NSE:TCS", "NSE:INFY", "NSE:HDFCBANK", "NSE:ICICIBANK",
+            "NSE:SBIN", "NSE:BHARTIARTL", "NSE:ITC", "BSE:SENSEX", "NSE:NIFTY"
+        ],
+        "description": "NSE & BSE — Nifty, Sensex, and India's top listed companies",
+        "detailed_description": "India's equity markets are anchored by two exchanges: the National Stock Exchange (NSE) and the Bombay Stock Exchange (BSE). The Nifty 50 tracks the top 50 NSE-listed companies by market cap, while the Sensex tracks the top 30 on the BSE — both are closely correlated benchmarks for the Indian economy. India's market is driven by domestic consumption, IT services exports, banking sector health, and FII/DII (foreign and domestic institutional investor) flows. Understanding sector weightings — IT, banking, energy, and FMCG dominate — along with RBI policy and monsoon-linked agricultural cycles is key to navigating Indian equities."
     }
 }
 
@@ -662,6 +671,14 @@ def predict_price_api(request):
         
         # Format symbol for yfinance (remove exchange prefix for ML)
         clean_ticker = ticker.split(":")[-1] if ":" in ticker else ticker
+
+        # Indian markets need .NS/.BO suffix for yfinance (unless already an index)
+        if market_type == 'indian_markets':
+            from .ml_models import is_indian_ticker
+            if not is_indian_ticker(clean_ticker) and clean_ticker.upper() not in (
+                'NIFTY', 'NIFTY50', 'SENSEX', 'NIFTYBANK', 'BANKNIFTY'
+            ):
+                clean_ticker = f"{clean_ticker}.NS"
         
         # Map timeline to days
         timeline_days = {
@@ -711,6 +728,15 @@ def risk_analysis_api(request):
         
         # Format symbol for yfinance
         clean_ticker = ticker.split(":")[-1] if ":" in ticker else ticker
+        market_type = data.get('market_type', '')
+
+        # Indian markets need .NS/.BO suffix for yfinance (unless already an index)
+        if market_type == 'indian_markets':
+            from .ml_models import is_indian_ticker
+            if not is_indian_ticker(clean_ticker) and clean_ticker.upper() not in (
+                'NIFTY', 'NIFTY50', 'SENSEX', 'NIFTYBANK', 'BANKNIFTY'
+            ):
+                clean_ticker = f"{clean_ticker}.NS"
         
         analyzer = RiskAnalyzer()
         metrics = analyzer.calculate_risk_metrics(clean_ticker)
