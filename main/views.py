@@ -11,6 +11,7 @@ import requests
 import pandas as pd
 import numpy as np
 from .ml_models import PricePredictor, RiskAnalyzer, PortfolioOptimizer
+from . import services
 
 # Market definitions with sample tickers - Updated with TradingView-compatible symbols
 MARKETS = {
@@ -669,17 +670,6 @@ def predict_price_api(request):
         if not ticker:
             return JsonResponse({'error': 'Ticker is required'}, status=400)
         
-        # Format symbol for yfinance (remove exchange prefix for ML)
-        clean_ticker = ticker.split(":")[-1] if ":" in ticker else ticker
-
-        # Indian markets need .NS/.BO suffix for yfinance (unless already an index)
-        if market_type == 'indian_markets':
-            from .ml_models import is_indian_ticker
-            if not is_indian_ticker(clean_ticker) and clean_ticker.upper() not in (
-                'NIFTY', 'NIFTY50', 'SENSEX', 'NIFTYBANK', 'BANKNIFTY'
-            ):
-                clean_ticker = f"{clean_ticker}.NS"
-        
         # Map timeline to days
         timeline_days = {
             '1d': 1,
@@ -691,27 +681,24 @@ def predict_price_api(request):
         }
         days_ahead = timeline_days.get(timeline, 30)
         
-        predictor = PricePredictor()
-        current_price, predicted_price, confidence = predictor.predict(clean_ticker, days_ahead)
+        result = services.get_prediction(ticker, days_ahead, market_type)
         
-        if predicted_price is None:
+        if result is None:
             return JsonResponse({
                 'error': 'Unable to fetch data or make prediction. Please try a different ticker.'
             }, status=400)
         
-        price_change = predicted_price - current_price
-        price_change_pct = (price_change / current_price) * 100
-        
         return JsonResponse({
             'success': True,
             'ticker': ticker,
-            'current_price': round(current_price, 2),
-            'predicted_price': round(predicted_price, 2),
-            'price_change': round(price_change, 2),
-            'price_change_pct': round(price_change_pct, 2),
-            'confidence': round(confidence, 1),
+            'current_price': result['current_price'],
+            'predicted_price': result['predicted_price'],
+            'price_change': result['price_change'],
+            'price_change_pct': result['price_change_pct'],
+            'confidence': result['confidence'],
             'timeline': timeline,
-            'target_date': target_date
+            'target_date': target_date,
+            'model_metrics': result.get('metrics', {}),
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
@@ -722,24 +709,12 @@ def risk_analysis_api(request):
     try:
         data = json.loads(request.body)
         ticker = data.get('ticker', '')
+        market_type = data.get('market_type', '')
         
         if not ticker:
             return JsonResponse({'error': 'Ticker is required'}, status=400)
         
-        # Format symbol for yfinance
-        clean_ticker = ticker.split(":")[-1] if ":" in ticker else ticker
-        market_type = data.get('market_type', '')
-
-        # Indian markets need .NS/.BO suffix for yfinance (unless already an index)
-        if market_type == 'indian_markets':
-            from .ml_models import is_indian_ticker
-            if not is_indian_ticker(clean_ticker) and clean_ticker.upper() not in (
-                'NIFTY', 'NIFTY50', 'SENSEX', 'NIFTYBANK', 'BANKNIFTY'
-            ):
-                clean_ticker = f"{clean_ticker}.NS"
-        
-        analyzer = RiskAnalyzer()
-        metrics = analyzer.calculate_risk_metrics(clean_ticker)
+        metrics = services.get_risk_analysis(ticker, market_type)
         
         if metrics is None:
             return JsonResponse({
@@ -769,8 +744,7 @@ def optimize_portfolio_api(request):
         # Clean tickers for yfinance (remove exchange prefixes)
         clean_tickers = [t.split(":")[-1] if ":" in t else t for t in tickers]
         
-        optimizer = PortfolioOptimizer()
-        result = optimizer.optimize_allocation(clean_tickers, risk_tolerance, investment_amount)
+        result = services.get_portfolio_optimization(clean_tickers, risk_tolerance, investment_amount)
         
         if result is None:
             return JsonResponse({
@@ -782,7 +756,9 @@ def optimize_portfolio_api(request):
             'allocation': result['allocation'],
             'expected_return': result['expected_return'],
             'expected_volatility': result['expected_volatility'],
-            'sharpe_ratio': result['sharpe_ratio']
+            'sharpe_ratio': result['sharpe_ratio'],
+            'efficient_frontier': result.get('efficient_frontier', []),
+            'optimizer': result.get('optimizer', 'scipy'),
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
@@ -795,6 +771,14 @@ def market_news_api(request):
     limit = int(request.GET.get('limit', 12))
     if market not in MARKETS:
         market = 'stocks'
+
+    from django.core.cache import cache
+    cache_key = f"news:{market}:{limit}"
+    cached_articles = cache.get(cache_key)
+    if cached_articles:
+        cached_response = JsonResponse({'success': True, 'market': market, 'articles': cached_articles, 'cached': True})
+        cached_response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        return cached_response
 
     tickers = MARKETS[market]['tickers']
     articles = fetch_live_news_from_api(market, limit=limit)
@@ -846,6 +830,9 @@ def market_news_api(request):
 
     if not articles:
         articles = DEFAULT_NEWS_FALLBACK[:limit]
+
+    if articles:
+        cache.set(cache_key, articles, 300)  # 5 min cache
 
     response = JsonResponse({
         'success': True,
