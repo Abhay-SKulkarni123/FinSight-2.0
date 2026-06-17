@@ -159,6 +159,8 @@ ML_MODELS_DIR.mkdir(exist_ok=True)
 # Rate limiting
 RATELIMIT_USE_CACHE = 'default'
 
+RATELIMIT_VIEW = 'main.views.ratelimit_error_response'
+
 # Logging
 LOGGING = {
     'version': 1,

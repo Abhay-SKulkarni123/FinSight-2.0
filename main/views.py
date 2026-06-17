@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 from .ml_models import PricePredictor, RiskAnalyzer, PortfolioOptimizer
 from . import services
+from django_ratelimit.decorators import ratelimit
 
 # Market definitions with sample tickers - Updated with TradingView-compatible symbols
 MARKETS = {
@@ -85,6 +86,13 @@ MARKETS = {
         "detailed_description": "India's equity markets are anchored by two exchanges: the National Stock Exchange (NSE) and the Bombay Stock Exchange (BSE). The Nifty 50 tracks the top 50 NSE-listed companies by market cap, while the Sensex tracks the top 30 on the BSE — both are closely correlated benchmarks for the Indian economy. India's market is driven by domestic consumption, IT services exports, banking sector health, and FII/DII (foreign and domestic institutional investor) flows. Understanding sector weightings — IT, banking, energy, and FMCG dominate — along with RBI policy and monsoon-linked agricultural cycles is key to navigating Indian equities."
     }
 }
+
+def ratelimit_error_response(request, exception):
+    """Friendly JSON response when rate limit is hit."""
+    return JsonResponse({
+        'error': 'Too many requests. Please wait a moment before trying again.',
+        'retry_after_seconds': 60
+    }, status=429)
 
 # Feature definitions
 FEATURES = [
@@ -657,6 +665,7 @@ def feature_view(request, market, feature_id):
     template = template_map.get(feature_id, "features/prediction.html")
     return render(request, template, context)
 
+@ratelimit(key='ip', rate='10/m', method='POST', block=True)
 @require_http_methods(["POST"])
 def predict_price_api(request):
     """API endpoint for price prediction"""
@@ -703,6 +712,7 @@ def predict_price_api(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+@ratelimit(key='ip', rate='10/m', method='POST', block=True)
 @require_http_methods(["POST"])
 def risk_analysis_api(request):
     """API endpoint for risk analysis"""
@@ -729,6 +739,7 @@ def risk_analysis_api(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+@ratelimit(key='ip', rate='10/m', method='POST', block=True)
 @require_http_methods(["POST"])
 def optimize_portfolio_api(request):
     """API endpoint for portfolio optimization"""

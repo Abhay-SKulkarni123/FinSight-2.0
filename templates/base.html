@@ -330,14 +330,24 @@
       const observer = new MutationObserver(setPosition);
       observer.observe(document.body, {childList: true, subtree: true});
       setPosition();
-      window.addEventListener('load', () => {
-        const opener = setInterval(() => {
-          if (window.botpressWebChat && typeof window.botpressWebChat.open === 'function') {
-            window.botpressWebChat.open();
-            clearInterval(opener);
-          }
-        }, 1200);
-      });
+      <script>
+    (function dockGuideBot(){
+      if (!window.MutationObserver) return;
+      const setPosition = () => {
+        document.querySelectorAll('#botpress-webchat,#bp-web-widget,.bpw-floating-button').forEach(node => {
+          node.style.position = 'fixed';
+          node.style.bottom = '24px';
+          node.style.right = '24px';
+          node.style.zIndex = '3600';
+        });
+      };
+      const observer = new MutationObserver(setPosition);
+      observer.observe(document.body, {childList: true, subtree: true});
+      setPosition();
+    })();
+  </script>
+  <script src="https://cdn.botpress.cloud/webchat/v3.3/inject.js" defer></script>
+  <script src="https://files.bpcontent.cloud/2025/10/17/08/20251017080016-5U17I1GI.js" defer></script>
     })();
   </script>
   <script src="https://cdn.botpress.cloud/webchat/v3.3/inject.js" defer></script>
