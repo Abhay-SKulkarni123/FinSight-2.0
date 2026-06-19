@@ -1,291 +1,297 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block title %}{{ feature.name }} — {{ market_name }} — FinSight{% endblock %}
+{% block meta_description %}{{ feature.description }}{% endblock %}
+
 {% block content %}
-<style>
-    :root{
-      --bg:#0d1117;
-      --card:#15181d;
-      --muted:#9aa4ac;
-      --text:#e6eef1;
-      --accent-green:#18ff8f;
-      --accent-orange:#ff9b42;
-      --border:#23272b;
-    }
-    .light{
-      --bg:#f6f7f9;
-      --card:#ffffff;
-      --muted:#59626a;
-      --text:#0f1720;
-      --accent-green:#00aa66;
-      --accent-orange:#ff6b00;
-      --border:#e6e9ec;
-    }
-    body{background:var(--bg);color:var(--text);padding-top:80px;}
-    .feature-container{max-width:1200px;margin:0 auto;padding:20px;}
-    .feature-header{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;}
-    .feature-header h1{color:var(--accent-orange);margin:0 0 8px 0;font-size:28px;}
-    .feature-header p{color:var(--muted);margin:0;}
-    .form-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;}
-    .form-group{margin-bottom:20px;}
-    .form-group label{display:block;margin-bottom:8px;color:var(--text);font-weight:600;}
-    .form-group input,.form-group select{width:100%;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;}
-    .form-group input:focus,.form-group select:focus{outline:none;border-color:var(--accent-green);}
-    .btn-primary{background:var(--accent-green);color:#000;border:none;padding:12px 24px;border-radius:8px;font-weight:600;cursor:pointer;transition:all 0.2s;}
-    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(24,255,143,0.3);}
-    .result-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-top:24px;display:none;}
-    .result-card.show{display:block;}
-    .prediction-value{font-size:32px;font-weight:700;color:var(--accent-green);margin:16px 0;}
-    .timeline-chart{height:400px;background:var(--bg);border-radius:8px;margin-top:16px;}
-</style>
+<div class="page">
 
-<div class="feature-container">
-    <div style="margin-bottom:16px;">
-        <a href="{% url 'market_detail' market %}" style="color:var(--accent-green);text-decoration:none;font-weight:600;">← Back to {{ market_name }}</a>
-    </div>
-    <div class="feature-header">
-        <h1>{{ feature.icon }} {{ feature.name }} - {{ market_name }}</h1>
-        <p>{{ feature.description }}</p>
-    </div>
+  <a href="{% url 'market_detail' market %}" style="color:var(--accent); text-decoration:none; font-weight:500; font-size:var(--text-sm); display:inline-flex; align-items:center; gap:4px; margin-bottom:var(--space-4);">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    Back to {{ market_name }}
+  </a>
 
-    <div class="form-card">
-        <form id="predictionForm">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="ticker">Ticker Symbol</label>
-                <select id="ticker" name="ticker" required>
-                    <option value="">Select a ticker</option>
-                    {% for ticker in tickers %}
-                    <option value="{{ ticker }}" data-display="{{ ticker|slice:":10" }}">{{ ticker|slice:":10" }}</option>
-                    {% endfor %}
-                </select>
-                <span id="tickerError" class="form-error" style="display:none;"></span>
-            </div>
-            <div class="form-group">
-                <label for="targetDate">Target Date</label>
-                <input type="date" id="targetDate" name="targetDate" required>
-            </div>
-            <div class="form-group">
-                <label for="timeline">Timeline</label>
-                <select id="timeline" name="timeline" required>
-                    <option value="1d">1 Day</option>
-                    <option value="1w">1 Week</option>
-                    <option value="1m">1 Month</option>
-                    <option value="3m">3 Months</option>
-                    <option value="6m">6 Months</option>
-                    <option value="1y">1 Year</option>
-                </select>
-            </div>
-            <button type="submit" class="btn-primary">Get Prediction</button>
-        </form>
-    </div>
+  <section class="card" style="margin-bottom: var(--space-5);">
+    <h1 class="display" style="color:var(--accent); margin:0 0 var(--space-1); font-size:var(--text-2xl);">{{ feature.name }} — {{ market_name }}</h1>
+    <p style="color:var(--muted); margin:0; font-size:var(--text-sm);">{{ feature.description }}</p>
+  </section>
 
-    <div id="resultCard" class="result-card">
-        <h2 style="color:var(--accent-orange);margin-top:0;">Prediction Results</h2>
-        <div id="predictionDetails"></div>
-        <div id="timelineChart" class="timeline-chart" style="position:relative;min-height:400px;">
-            <div class="loading-overlay" id="chartLoading" style="display:none;">
-                <div style="text-align:center;">
-                    <div class="spinner" style="margin:0 auto 12px;"></div>
-                    <div style="color:var(--muted);font-size:14px;">Loading chart...</div>
-                </div>
+  <div style="display:grid; grid-template-columns: 360px 1fr; gap: var(--space-5); align-items:start;">
+
+    <form id="predictionForm" class="card" novalidate>
+      {% csrf_token %}
+      <div style="margin-bottom: var(--space-4);">
+        <label for="ticker" style="display:block; margin-bottom:var(--space-2); font-weight:600; font-size:var(--text-sm);">Ticker symbol</label>
+        <select id="ticker" name="ticker" required style="width:100%; padding:10px 12px; background:var(--bg-raised); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:var(--text-sm);">
+          <option value="">Select a ticker</option>
+          {% for ticker in tickers %}
+          <option value="{{ ticker }}">{{ ticker|slice:":10" }}</option>
+          {% endfor %}
+        </select>
+        <span id="tickerError" role="alert" style="display:none; color:var(--loss); font-size:var(--text-xs); margin-top:4px;"></span>
+      </div>
+
+      <div style="margin-bottom: var(--space-4);">
+        <label for="targetDate" style="display:block; margin-bottom:var(--space-2); font-weight:600; font-size:var(--text-sm);">Target date</label>
+        <input type="date" id="targetDate" name="targetDate" required style="width:100%; padding:10px 12px; background:var(--bg-raised); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:var(--text-sm);">
+      </div>
+
+      <div style="margin-bottom: var(--space-5);">
+        <label for="timeline" style="display:block; margin-bottom:var(--space-2); font-weight:600; font-size:var(--text-sm);">Timeline</label>
+        <select id="timeline" name="timeline" required style="width:100%; padding:10px 12px; background:var(--bg-raised); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:var(--text-sm);">
+          <option value="1d">1 day</option>
+          <option value="1w">1 week</option>
+          <option value="1m" selected>1 month</option>
+          <option value="3m">3 months</option>
+          <option value="6m">6 months</option>
+          <option value="1y">1 year</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width:100%;">Get prediction</button>
+    </form>
+
+    <div id="resultSection" style="display:none;">
+
+      <div class="card" style="margin-bottom: var(--space-4);" id="gaugeCard">
+        <div id="gaugeContent"></div>
+      </div>
+
+      <div class="coach" style="margin-bottom: var(--space-4);" id="predictionCoach"></div>
+
+      <div class="card card-flush">
+        <div id="timelineChart" style="height:400px; position:relative;">
+          <div class="loading-overlay" id="chartLoading" style="position:absolute; inset:0; background:rgba(11,18,32,0.7); display:none; align-items:center; justify-content:center;">
+            <div style="text-align:center;">
+              <div class="spinner" style="margin:0 auto var(--space-2);"></div>
+              <div style="color:var(--muted); font-size:var(--text-xs);">Loading chart…</div>
             </div>
+          </div>
         </div>
+      </div>
     </div>
-</div>
 
+    <div id="emptyState" class="card" style="text-align:center; padding: var(--space-8) var(--space-5); color:var(--muted);">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true" style="margin-bottom:var(--space-3); opacity:0.5;"><path d="M3 17l5-5 4 4 8-9M21 7v6"/></svg>
+      <p style="margin:0; font-size:var(--text-sm);">Select a ticker and timeline to generate a prediction.</p>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://s3.tradingview.com/tv.js"></script>
 <script>
-// Symbol formatting helper
 function formatSymbolForTradingView(symbol, marketType) {
-    if (!symbol) return "SP:SPX";
-    
-    // If already formatted with exchange, return as is
-    if (symbol.includes(":")) {
-        return symbol;
-    }
-    
-    // Format based on market type
-    const marketTypeMap = {
-        'stocks': (s) => s.includes("NASDAQ") ? s : `NASDAQ:${s}`,
-        'crypto': (s) => s.includes("BINANCE") ? s : `BINANCE:${s}USDT`,
-        'indices': (s) => {
-            const map = {'SPX': 'SP:SPX', 'DJI': 'DJ:DJI', 'IXIC': 'NASDAQ:IXIC'};
-            return map[s] || s;
-        },
-        'forex': (s) => s.startsWith("FX:") ? s : `FX:${s}`,
-        'metals': (s) => s.startsWith("TVC:") ? s : `TVC:${s}`,
-        'energy': (s) => s.includes("NYMEX") ? s : `NYMEX:${s}`,
-        'bonds': (s) => s.startsWith("TVC:") ? s : `TVC:${s}`,
-        'etfs': (s) => s.includes(":") ? s : `AMEX:${s}`,
-        'futures': (s) => s.includes(":") ? s : `CME:${s}`,
-        'commodities': (s) => s.includes(":") ? s : `CBOT:${s}`
-    };
-    
-    const formatter = marketTypeMap[marketType] || ((s) => s);
-    return formatter(symbol);
+  if (!symbol) return "SP:SPX";
+  if (symbol.includes(":")) return symbol;
+  const marketTypeMap = {
+    'stocks': (s) => `NASDAQ:${s}`,
+    'crypto': (s) => `BINANCE:${s}USDT`,
+    'indices': (s) => ({'SPX': 'SP:SPX', 'DJI': 'DJ:DJI', 'IXIC': 'NASDAQ:IXIC'}[s] || s),
+    'forex': (s) => `FX:${s}`,
+    'metals': (s) => `TVC:${s}`,
+    'energy': (s) => `NYMEX:${s}`,
+    'bonds': (s) => `TVC:${s}`,
+    'etfs': (s) => `AMEX:${s}`,
+    'futures': (s) => `CME:${s}`,
+    'commodities': (s) => `CBOT:${s}`,
+    'indian_markets': (s) => s.toUpperCase().includes('SENSEX') ? 'BSE:SENSEX' : `NSE:${s}`,
+  };
+  const formatter = marketTypeMap[marketType] || ((s) => s);
+  return formatter(symbol);
+}
+
+function el(tag, props, children) {
+  const node = document.createElement(tag);
+  Object.entries(props || {}).forEach(([k, v]) => {
+    if (k === 'style') node.style.cssText = v;
+    else if (k === 'class') node.className = v;
+    else node.setAttribute(k, v);
+  });
+  (children || []).forEach(c => {
+    if (typeof c === 'string') node.appendChild(document.createTextNode(c));
+    else if (c) node.appendChild(c);
+  });
+  return node;
+}
+
+function renderGauge(data) {
+  const isUp = data.price_change >= 0;
+  const deltaColor = isUp ? 'var(--gain)' : 'var(--loss)';
+  const arrow = isUp
+    ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>'
+    : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>';
+
+  const wrap = el('div');
+
+  const row = el('div', { style: 'display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: var(--space-4);' });
+  const currentBlock = el('div');
+  currentBlock.appendChild(el('div', { style: 'font-size:var(--text-xs); color:var(--muted); margin-bottom:4px;' }, ['Current price']));
+  currentBlock.appendChild(el('div', { class: 'mono', style: 'font-size:var(--text-xl); font-weight:600;' }, [`$${data.current_price.toFixed(2)}`]));
+  row.appendChild(currentBlock);
+
+  const predBlock = el('div', { style: 'text-align:right;' });
+  predBlock.appendChild(el('div', { style: 'font-size:var(--text-xs); color:var(--muted); margin-bottom:4px;' }, ['Predicted price']));
+  predBlock.appendChild(el('div', { class: 'mono', style: `font-size:var(--text-xl); font-weight:600; color:${deltaColor};` }, [`$${data.predicted_price.toFixed(2)}`]));
+  row.appendChild(predBlock);
+  wrap.appendChild(row);
+
+  const barOuter = el('div', { style: 'height:8px; background:var(--border); border-radius:4px; overflow:hidden; margin-bottom: var(--space-3); position:relative;' });
+  const pct = Math.min(100, Math.max(0, 50 + (data.price_change_pct * 4)));
+  const barFill = el('div', { style: `height:100%; width:${pct}%; background:${deltaColor}; transition: width 400ms ease;` });
+  barOuter.appendChild(barFill);
+  wrap.appendChild(barOuter);
+
+  const deltaRow = el('div', { class: 'delta ' + (isUp ? 'up' : 'down'), style: 'font-size: var(--text-base); padding: 6px 12px; margin-bottom: var(--space-3);' });
+  deltaRow.innerHTML = arrow;
+  deltaRow.appendChild(document.createTextNode(` ${isUp ? '+' : ''}$${data.price_change.toFixed(2)} (${isUp ? '+' : ''}${data.price_change_pct.toFixed(2)}%)`));
+  wrap.appendChild(deltaRow);
+
+  const confRow = el('div', { style: 'display:flex; align-items:center; gap:var(--space-3);' });
+  confRow.appendChild(el('div', { style: 'font-size:var(--text-xs); color:var(--muted); flex-shrink:0;' }, ['Model confidence']));
+  const confBarOuter = el('div', { style: 'flex:1; height:6px; background:var(--border); border-radius:3px; overflow:hidden;' });
+  const confBarFill = el('div', { style: `height:100%; width:${data.confidence}%; background:var(--accent); transition: width 400ms ease;` });
+  confBarOuter.appendChild(confBarFill);
+  confRow.appendChild(confBarOuter);
+  confRow.appendChild(el('div', { class: 'mono', style: 'font-size:var(--text-sm); font-weight:600; color:var(--accent); flex-shrink:0;' }, [`${data.confidence.toFixed(1)}%`]));
+  wrap.appendChild(confRow);
+
+  return wrap;
+}
+
+function renderCoach(data) {
+  const wrap = el('div');
+  const title = el('div', { class: 'coach-title' });
+  title.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v4m0 12v4M4.9 4.9l2.8 2.8m8.6 8.6l2.8 2.8M2 12h4m12 0h4M4.9 19.1l2.8-2.8m8.6-8.6l2.8-2.8"/></svg>';
+  title.appendChild(document.createTextNode(' Prediction coach'));
+  wrap.appendChild(title);
+
+  const lines = [];
+  const isUp = data.price_change >= 0;
+  lines.push({
+    badge: isUp ? 'good' : 'watch',
+    label: isUp ? 'Bullish' : 'Bearish',
+    text: `Model forecasts a ${Math.abs(data.price_change_pct).toFixed(2)}% ${isUp ? 'gain' : 'decline'} over the selected timeline.`,
+  });
+  if (data.confidence < 65) {
+    lines.push({ badge: 'alert', label: 'Alert', text: 'Confidence is on the lower side — treat this forecast as directional, not precise.' });
+  } else if (data.confidence >= 80) {
+    lines.push({ badge: 'good', label: 'Good', text: 'Confidence is relatively high for this model — historical patterns are clear.' });
+  } else {
+    lines.push({ badge: 'watch', label: 'Watch', text: 'Moderate confidence — consider cross-checking against the Risk page before acting.' });
+  }
+  if (data.model_metrics && data.model_metrics.rmse) {
+    lines.push({ badge: 'watch', label: 'Model', text: `Trained on ${data.model_metrics.samples || 'historical'} samples with an RMSE of ${data.model_metrics.rmse.toFixed(2)}.` });
+  }
+
+  lines.forEach(line => {
+    const row = el('div', { class: 'coach-line' });
+    row.appendChild(el('span', { class: 'coach-badge ' + line.badge }, [line.label]));
+    row.appendChild(el('span', {}, [line.text]));
+    wrap.appendChild(row);
+  });
+
+  return wrap;
+}
+
+function renderErrorCoach(message) {
+  const wrap = el('div');
+  const title = el('div', { class: 'coach-title', style: 'color:var(--loss);' }, ['Unable to generate prediction']);
+  wrap.appendChild(title);
+  const row = el('div', { class: 'coach-line' });
+  row.appendChild(el('span', { class: 'coach-badge alert' }, ['Error']));
+  row.appendChild(el('span', {}, [message]));
+  wrap.appendChild(row);
+  return wrap;
 }
 
 document.getElementById('predictionForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const tickerSelect = document.getElementById('ticker');
-    const ticker = tickerSelect.value;
-    const targetDate = document.getElementById('targetDate').value;
-    const timeline = document.getElementById('timeline').value;
-    const marketType = "{{ market_type }}";
-    
-    // Form validation
-    const tickerError = document.getElementById('tickerError');
-    let isValid = true;
-    
-    if (!ticker) {
-        tickerError.textContent = 'Please select a ticker symbol';
-        tickerError.style.display = 'block';
-        tickerSelect.parentElement.classList.add('error');
-        isValid = false;
-    } else {
-        tickerError.style.display = 'none';
-        tickerSelect.parentElement.classList.remove('error');
-    }
-    
-    if (!targetDate) {
-        showToast('Validation Error', 'Please select a target date', 'error', 3000);
-        isValid = false;
-    }
-    
-    if (!isValid) {
-        return;
-    }
-    
-    const resultCard = document.getElementById('resultCard');
-    const detailsDiv = document.getElementById('predictionDetails');
-    const submitBtn = document.querySelector('button[type="submit"]');
-    
-    // Show loading state
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="spinner" style="margin-right:8px;"></span>Predicting...';
-    detailsDiv.innerHTML = `
-        <div style="text-align:center;padding:20px;">
-            <div class="spinner" style="margin:0 auto 16px;"></div>
-            <p style="color:var(--muted);margin:0;">Analyzing market data with ML models...</p>
-            <p style="color:var(--muted);font-size:12px;margin-top:8px;">This may take a few seconds</p>
-        </div>
-    `;
-    resultCard.classList.add('show', 'fade-in');
-    
-    // Call ML prediction API
-    fetch('/api/predict/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
-        },
-        body: JSON.stringify({
-            ticker: ticker,
-            target_date: targetDate,
-            timeline: timeline,
-            market_type: marketType
-        })
-    })
+  e.preventDefault();
+  const tickerSelect = document.getElementById('ticker');
+  const ticker = tickerSelect.value;
+  const targetDate = document.getElementById('targetDate').value;
+  const timeline = document.getElementById('timeline').value;
+  const marketType = "{{ market_type }}";
+
+  const tickerError = document.getElementById('tickerError');
+  let isValid = true;
+
+  if (!ticker) {
+    tickerError.textContent = 'Please select a ticker symbol.';
+    tickerError.style.display = 'block';
+    isValid = false;
+  } else {
+    tickerError.style.display = 'none';
+  }
+
+  if (!targetDate) {
+    showToast('Validation error', 'Please select a target date.', 'error', 3000);
+    isValid = false;
+  }
+
+  if (!isValid) return;
+
+  const emptyState = document.getElementById('emptyState');
+  const resultSection = document.getElementById('resultSection');
+  const gaugeContent = document.getElementById('gaugeContent');
+  const coachEl = document.getElementById('predictionCoach');
+  const submitBtn = document.querySelector('button[type="submit"]');
+
+  emptyState.style.display = 'none';
+  resultSection.style.display = 'block';
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Predicting…';
+
+  gaugeContent.innerHTML = '';
+  gaugeContent.appendChild(el('div', { style: 'text-align:center; padding: var(--space-5) 0;' }, [
+    el('div', { class: 'spinner', style: 'margin: 0 auto var(--space-3);' }),
+    el('div', { style: 'color:var(--muted); font-size:var(--text-sm);' }, ['Analyzing market data with ML models…']),
+  ]));
+  coachEl.innerHTML = '';
+
+  fetch('/api/predict/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '',
+    },
+    body: JSON.stringify({ ticker, target_date: targetDate, timeline, market_type: marketType }),
+  })
     .then(response => response.json())
     .then(data => {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Get Prediction';
-        
-        if (data.success) {
-            const changeClass = data.price_change >= 0 ? 'positive' : 'negative';
-            const changeSign = data.price_change >= 0 ? '+' : '';
-            
-            detailsDiv.innerHTML = `
-                <div style="margin-bottom:20px;">
-                    <p><strong>Ticker:</strong> ${data.ticker}</p>
-                    <p><strong>Target Date:</strong> ${data.target_date || 'N/A'}</p>
-                    <p><strong>Timeline:</strong> ${data.timeline}</p>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
-                    <div style="background:var(--bg);padding:16px;border-radius:8px;border:1px solid var(--border);">
-                        <div style="color:var(--muted);font-size:14px;margin-bottom:4px;">Current Price</div>
-                        <div style="font-size:24px;font-weight:700;color:var(--text);">$${data.current_price.toFixed(2)}</div>
-                    </div>
-                    <div style="background:var(--bg);padding:16px;border-radius:8px;border:1px solid var(--border);">
-                        <div style="color:var(--muted);font-size:14px;margin-bottom:4px;">Predicted Price</div>
-                        <div style="font-size:24px;font-weight:700;color:var(--accent-green);">$${data.predicted_price.toFixed(2)}</div>
-                    </div>
-                </div>
-                <div style="background:var(--bg);padding:16px;border-radius:8px;border:1px solid var(--border);margin-bottom:20px;">
-                    <div style="color:var(--muted);font-size:14px;margin-bottom:4px;">Expected Change</div>
-                    <div style="font-size:32px;font-weight:700;color:${data.price_change >= 0 ? 'var(--accent-green)' : '#ff4444'};">
-                        ${changeSign}$${data.price_change.toFixed(2)} (${changeSign}${data.price_change_pct.toFixed(2)}%)
-                    </div>
-                </div>
-                <div style="background:var(--bg);padding:16px;border-radius:8px;border:1px solid var(--border);">
-                    <div style="color:var(--muted);font-size:14px;margin-bottom:4px;">ML Model Confidence</div>
-                    <div style="display:flex;align-items:center;gap:12px;">
-                        <div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden;">
-                            <div style="height:100%;width:${data.confidence}%;background:var(--accent-green);transition:width 0.3s;"></div>
-                        </div>
-                        <div style="font-size:18px;font-weight:700;color:var(--accent-green);">${data.confidence.toFixed(1)}%</div>
-                    </div>
-                </div>
-                <p style="color:var(--muted);margin-top:16px;font-size:14px;">Prediction generated using Gradient Boosting ML model trained on historical price data and technical indicators.</p>
-            `;
-        } else {
-            detailsDiv.innerHTML = `
-                <div style="color:#ff4444;padding:16px;background:var(--bg);border-radius:8px;border:1px solid #ff4444;">
-                    <strong>Error:</strong> ${data.error || 'Unable to generate prediction. Please try a different ticker or check your internet connection.'}
-                </div>
-            `;
-        }
-        
-        // Load TradingView chart
-        function loadPredictionChart() {
-            if (typeof TradingView === 'undefined') {
-                setTimeout(loadPredictionChart, 100);
-                return;
-            }
-            
-            const chartContainer = document.getElementById('timelineChart');
-            const chartLoading = document.getElementById('chartLoading');
-            if (chartContainer) {
-                if (chartLoading) chartLoading.style.display = 'flex';
-                const formattedSymbol = formatSymbolForTradingView(ticker, marketType);
-                try {
-                    new TradingView.widget({
-                        width: "100%",
-                        height: 400,
-                        symbol: formattedSymbol,
-                        interval: timeline === "1d" ? "60" : timeline === "1w" ? "240" : "D",
-                        timezone: "Etc/UTC",
-                        theme: "dark",
-                        style: "1",
-                        locale: "en",
-                        toolbar_bg: "#111",
-                        enable_publishing: false,
-                        container_id: "timelineChart",
-                        onchartready: function() {
-                            if (chartLoading) chartLoading.style.display = 'none';
-                        }
-                    });
-                    setTimeout(function() {
-                        if (chartLoading) chartLoading.style.display = 'none';
-                    }, 3000);
-                } catch (e) {
-                    if (chartLoading) chartLoading.style.display = 'none';
-                    chartContainer.innerHTML = '<div class="fade-in" style="padding:20px;color:var(--muted);text-align:center;">Chart unavailable for ' + ticker + '</div>';
-                }
-            }
-        }
-        loadPredictionChart();
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Get prediction';
+
+      gaugeContent.innerHTML = '';
+      coachEl.innerHTML = '';
+
+      if (data.success) {
+        gaugeContent.appendChild(renderGauge(data));
+        coachEl.appendChild(renderCoach(data));
+
+        const chartContainer = document.getElementById('timelineChart');
+        const chartLoading = document.getElementById('chartLoading');
+        chartLoading.style.display = 'flex';
+        const formattedSymbol = formatSymbolForTradingView(ticker, marketType);
+
+        window.FinSightCharts.renderChart('timelineChart', formattedSymbol, {
+          height: 400,
+          interval: timeline === '1d' ? '60' : timeline === '1w' ? '240' : 'D',
+          displayName: ticker,
+        });
+      } else {
+        gaugeContent.appendChild(renderErrorCoach(data.error || 'Unable to generate prediction. Please try a different ticker.'));
+      }
     })
     .catch(error => {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = 'Get Prediction';
-        detailsDiv.innerHTML = `
-            <div style="color:#ff4444;padding:16px;background:var(--bg);border-radius:8px;border:1px solid #ff4444;">
-                <strong>Error:</strong> ${error.message || 'Failed to connect to prediction service. Please try again.'}
-            </div>
-        `;
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Get prediction';
+      gaugeContent.innerHTML = '';
+      gaugeContent.appendChild(renderErrorCoach(error.message || 'Failed to connect to the prediction service. Please try again.'));
     });
 });
 </script>
 {% endblock %}
-

@@ -1,189 +1,198 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ feature.name }} — {{ market_name }} — FinSight{% endblock %}
+{% block meta_description %}Benchmark up to three {{ market_name }} symbols head-to-head with synchronized charts and valuation metrics.{% endblock %}
 
 {% block content %}
-<style>
-    :root{
-      --bg:#0d1117;
-      --card:#15181d;
-      --muted:#9aa4ac;
-      --text:#e6eef1;
-      --accent-green:#18ff8f;
-      --accent-orange:#ff9b42;
-      --border:#23272b;
-    }
-    body{background:var(--bg);color:var(--text);padding-top:80px;}
-    .feature-container{max-width:1400px;margin:0 auto;padding:20px;}
-    .feature-header{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;}
-    .feature-header h1{color:var(--accent-orange);margin:0 0 8px 0;font-size:28px;}
-    .comparison-controls{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;}
-    .comparison-controls input,.comparison-controls select{width:100%;padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);}
-    .comparison-table{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;overflow-x:auto;margin-bottom:24px;}
-    table{width:100%;border-collapse:collapse;}
-    th,td{padding:12px;text-align:left;border-bottom:1px solid var(--border);}
-    th{color:var(--accent-orange);font-weight:600;}
-    .chart-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;}
-    .chart-card canvas{height:380px;}
-    .btn-primary{background:var(--accent-green);color:#000;border:none;padding:12px 24px;border-radius:8px;font-weight:600;cursor:pointer;margin-top:12px;}
-    .badge{padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;}
-    .positive{color:var(--accent-green);}
-    .negative{color:#ff4444;}
-</style>
+<div class="page">
 
-<div class="feature-container">
-    <div style="margin-bottom:16px;">
-        <a href="{% url 'market_detail' market %}" style="color:var(--accent-green);text-decoration:none;font-weight:600;">← Back to {{ market_name }}</a>
-    </div>
-    <div class="feature-header">
-        <h1>{{ feature.icon }} {{ feature.name }} - {{ market_name }}</h1>
-        <p>Benchmark up to three symbols head-to-head with synchronized charts, valuation metrics, and ML momentum indicators.</p>
-    </div>
+  <a href="{% url 'market_detail' market %}" style="color:var(--accent); text-decoration:none; font-weight:500; font-size:var(--text-sm); display:inline-flex; align-items:center; gap:4px; margin-bottom:var(--space-4);">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    Back to {{ market_name }}
+  </a>
 
-    <div class="comparison-controls">
-        <form id="comparisonForm">
-            {% csrf_token %}
-            <label style="display:block;font-weight:600;margin-bottom:8px;">Tickers (up to 3)</label>
-            <input type="text" id="compareTickers" placeholder="e.g. AAPL, MSFT, TSLA" value="{{ display_tickers|slice:':3'|join:', ' }}">
-            <label style="display:block;font-weight:600;margin:16px 0 8px;">Time Horizon</label>
-            <select id="comparePeriod">
-                <option value="1m">1 Month</option>
-                <option value="3m" selected>3 Months</option>
-                <option value="6m">6 Months</option>
-                <option value="1y">1 Year</option>
-            </select>
-            <button type="submit" class="btn-primary">Compare</button>
-        </form>
-    </div>
+  <section class="card" style="margin-bottom: var(--space-5);">
+    <h1 class="display" style="color:var(--accent); margin:0 0 var(--space-1); font-size:var(--text-2xl);">{{ feature.name }} — {{ market_name }}</h1>
+    <p style="color:var(--muted); margin:0; font-size:var(--text-sm);">Benchmark up to three symbols head-to-head with synchronized charts, valuation metrics, and momentum indicators.</p>
+  </section>
 
-    <div class="comparison-table">
-        <h3 style="color:var(--accent-orange);margin-top:0;">Key Metrics</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Symbol</th>
-                    <th>Price</th>
-                    <th>Change %</th>
-                    <th>Market Cap</th>
-                    <th>P/E</th>
-                    <th>Dividend</th>
-                    <th>52W Range</th>
-                    <th>RSI</th>
-                </tr>
-            </thead>
-            <tbody id="comparisonTableBody">
-                <tr><td colspan="8" style="padding:24px;text-align:center;color:var(--muted);">Run a comparison to populate this table.</td></tr>
-            </tbody>
-        </table>
+  <form id="comparisonForm" class="card" style="margin-bottom: var(--space-5);" novalidate>
+    {% csrf_token %}
+    <div style="display:grid; grid-template-columns: 1fr 200px auto; gap: var(--space-4); align-items:flex-end;">
+      <div>
+        <label for="compareTickers" style="display:block; font-weight:600; margin-bottom:var(--space-2); font-size:var(--text-sm);">Tickers (up to 3)</label>
+        <input type="text" id="compareTickers" placeholder="e.g. AAPL, MSFT, TSLA" value="{{ display_tickers|slice:':3'|join:', ' }}" style="width:100%; padding:10px 12px; background:var(--bg-raised); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:var(--text-sm);">
+      </div>
+      <div>
+        <label for="comparePeriod" style="display:block; font-weight:600; margin-bottom:var(--space-2); font-size:var(--text-sm);">Time horizon</label>
+        <select id="comparePeriod" style="width:100%; padding:10px 12px; background:var(--bg-raised); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:var(--text-sm);">
+          <option value="1m">1 month</option>
+          <option value="3m" selected>3 months</option>
+          <option value="6m">6 months</option>
+          <option value="1y">1 year</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">Compare</button>
     </div>
+  </form>
 
-        <div class="chart-card">
-        <div style="color:var(--accent-orange);font-weight:600;margin-bottom:12px;">Normalized Price Performance</div>
-        <canvas id="comparisonChart"></canvas>
-    </div>
+  <div class="card card-flush" style="margin-bottom: var(--space-5);">
+    <div style="padding: var(--space-3) var(--space-4); border-bottom:1px solid var(--border); color:var(--accent); font-weight:600; font-size:var(--text-sm);">Key metrics</div>
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:var(--space-3) var(--space-4); text-align:left; color:var(--muted); font-size:var(--text-xs); text-transform:uppercase; letter-spacing:0.04em;">Symbol</th>
+          <th style="padding:var(--space-3) var(--space-4); text-align:left; color:var(--muted); font-size:var(--text-xs); text-transform:uppercase; letter-spacing:0.04em;">Price</th>
+          <th style="padding:var(--space-3) var(--space-4); text-align:left; color:var(--muted); font-size:var(--text-xs); text-transform:uppercase; letter-spacing:0.04em;">Change</th>
+          <th style="padding:var(--space-3) var(--space-4); text-align:left; color:var(--muted); font-size:var(--text-xs); text-transform:uppercase; letter-spacing:0.04em;">Market cap</th>
+          <th style="padding:var(--space-3) var(--space-4); text-align:left; color:var(--muted); font-size:var(--text-xs); text-transform:uppercase; letter-spacing:0.04em;">P/E</th>
+          <th style="padding:var(--space-3) var(--space-4); text-align:left; color:var(--muted); font-size:var(--text-xs); text-transform:uppercase; letter-spacing:0.04em;">Dividend</th>
+          <th style="padding:var(--space-3) var(--space-4); text-align:left; color:var(--muted); font-size:var(--text-xs); text-transform:uppercase; letter-spacing:0.04em;">52W range</th>
+          <th style="padding:var(--space-3) var(--space-4); text-align:left; color:var(--muted); font-size:var(--text-xs); text-transform:uppercase; letter-spacing:0.04em;">RSI</th>
+        </tr>
+      </thead>
+      <tbody id="comparisonTableBody">
+        <tr><td colspan="8" style="padding:var(--space-6); text-align:center; color:var(--muted); font-size:var(--text-sm);">Run a comparison to populate this table.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div style="color:var(--accent); font-weight:600; margin-bottom:var(--space-3); font-size:var(--text-sm);">Normalized price performance</div>
+    <canvas id="comparisonChart" role="img" aria-label="Normalized price performance comparison chart"></canvas>
+  </div>
 </div>
+{% endblock %}
 
+{% block extra_scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 const comparisonForm = document.getElementById('comparisonForm');
 const tableBody = document.getElementById('comparisonTableBody');
 let comparisonChart;
 
+function el(tag, props, children) {
+  const node = document.createElement(tag);
+  Object.entries(props || {}).forEach(([k, v]) => {
+    if (k === 'style') node.style.cssText = v;
+    else if (k === 'class') node.className = v;
+    else node.setAttribute(k, v);
+  });
+  (children || []).forEach(c => {
+    if (typeof c === 'string') node.appendChild(document.createTextNode(c));
+    else if (c) node.appendChild(c);
+  });
+  return node;
+}
+
+function emptyRow(message, colorVar) {
+  tableBody.innerHTML = '';
+  const tr = el('tr');
+  const td = el('td', { colspan: '8', style: `padding:var(--space-6); text-align:center; color:${colorVar || 'var(--muted)'}; font-size:var(--text-sm);` }, [message]);
+  tr.appendChild(td);
+  tableBody.appendChild(tr);
+}
+
 function renderTable(assets) {
-    if (!assets || !assets.length) {
-        tableBody.innerHTML = '<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--muted);">No data available.</td></tr>';
-        return;
-    }
-    tableBody.innerHTML = '';
-    assets.forEach(asset => {
-        const changeClass = asset.change_pct >= 0 ? 'positive' : 'negative';
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><strong>${asset.ticker}</strong></td>
-            <td>$${asset.price.toFixed(2)}</td>
-            <td class="${changeClass}">${asset.change_pct >= 0 ? '+' : ''}${asset.change_pct.toFixed(2)}%</td>
-            <td>${asset.market_cap ? '$' + (asset.market_cap/1e9).toFixed(1) + 'B' : '—'}</td>
-            <td>${asset.pe_ratio ? asset.pe_ratio.toFixed(2) : '—'}</td>
-            <td>${asset.dividend_yield != null ? asset.dividend_yield.toFixed(2) + '%' : '—'}</td>
-            <td>${asset.fifty_two_week_low ? '$' + asset.fifty_two_week_low.toFixed(2) : '—'} — ${asset.fifty_two_week_high ? '$' + asset.fifty_two_week_high.toFixed(2) : '—'}</td>
-            <td>${asset.rsi ? asset.rsi.toFixed(1) : '—'}</td>
-        `;
-        tableBody.appendChild(tr);
-    });
+  if (!assets || !assets.length) {
+    emptyRow('No data available.');
+    return;
+  }
+  tableBody.innerHTML = '';
+  assets.forEach(asset => {
+    const isUp = asset.change_pct >= 0;
+    const tr = el('tr', { style: 'border-bottom:1px solid var(--border);' });
+    tr.appendChild(el('td', { class: 'mono', style: 'padding:var(--space-3) var(--space-4); font-weight:600;' }, [asset.ticker]));
+    tr.appendChild(el('td', { class: 'mono', style: 'padding:var(--space-3) var(--space-4);' }, [`$${asset.price.toFixed(2)}`]));
+    const deltaCell = el('td', { style: 'padding:var(--space-3) var(--space-4);' });
+    const badge = el('span', { class: 'delta ' + (isUp ? 'up' : 'down') }, [`${isUp ? '+' : ''}${asset.change_pct.toFixed(2)}%`]);
+    deltaCell.appendChild(badge);
+    tr.appendChild(deltaCell);
+    tr.appendChild(el('td', { class: 'mono', style: 'padding:var(--space-3) var(--space-4);' }, [asset.market_cap ? `$${(asset.market_cap / 1e9).toFixed(1)}B` : '—']));
+    tr.appendChild(el('td', { class: 'mono', style: 'padding:var(--space-3) var(--space-4);' }, [asset.pe_ratio ? asset.pe_ratio.toFixed(2) : '—']));
+    tr.appendChild(el('td', { class: 'mono', style: 'padding:var(--space-3) var(--space-4);' }, [asset.dividend_yield != null ? `${asset.dividend_yield.toFixed(2)}%` : '—']));
+    tr.appendChild(el('td', { class: 'mono', style: 'padding:var(--space-3) var(--space-4);' }, [
+      `${asset.fifty_two_week_low ? '$' + asset.fifty_two_week_low.toFixed(2) : '—'} — ${asset.fifty_two_week_high ? '$' + asset.fifty_two_week_high.toFixed(2) : '—'}`
+    ]));
+    tr.appendChild(el('td', { class: 'mono', style: 'padding:var(--space-3) var(--space-4);' }, [asset.rsi ? asset.rsi.toFixed(1) : '—']));
+    tableBody.appendChild(tr);
+  });
 }
 
 function renderChart(chartData) {
-    if (!chartData || !chartData.labels || !chartData.series) {
-        return;
-    }
-    const ctx = document.getElementById('comparisonChart').getContext('2d');
-    if (comparisonChart) comparisonChart.destroy();
-    comparisonChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: chartData.labels,
-            datasets: chartData.series.map((series, idx) => ({
-                label: series.label,
-                data: series.data,
-                borderWidth: 2,
-                borderColor: ['#18ff8f','#ff9b42','#57b6fe','#c084fc'][idx % 4],
-                backgroundColor: 'transparent',
-                tension: 0.25
-            }))
-        },
-        options: {
-            plugins: { legend: { position: 'bottom', labels: { color: 'var(--muted)' } } },
-            scales: {
-                x: { ticks: { color: 'var(--muted)' } },
-                y: { ticks: { color: 'var(--muted)' } }
-            }
-        }
-    });
+  if (!chartData || !chartData.labels || !chartData.series) return;
+  const ctx = document.getElementById('comparisonChart').getContext('2d');
+  if (comparisonChart) comparisonChart.destroy();
+  const palette = ['#D4A24C', '#4A9D78', '#4C7FD4', '#C45A4E'];
+  comparisonChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: chartData.labels,
+      datasets: chartData.series.map((series, idx) => ({
+        label: series.label,
+        data: series.data,
+        borderWidth: 2,
+        borderColor: palette[idx % palette.length],
+        backgroundColor: 'transparent',
+        tension: 0.25,
+      })),
+    },
+    options: {
+      plugins: { legend: { position: 'bottom', labels: { color: 'var(--text-dim)', font: { size: 11 } } } },
+      scales: {
+        x: { ticks: { color: 'var(--muted)' } },
+        y: { ticks: { color: 'var(--muted)' } },
+      },
+    },
+  });
 }
 
 function runComparison() {
-    const raw = document.getElementById('compareTickers').value;
-    const tickers = raw.split(',').map(t => t.trim()).filter(Boolean).slice(0, 3);
-    if (tickers.length < 2) {
-        showToast('Compare', 'Please enter at least two tickers (comma separated).', 'warning', 3000);
-        return;
-    }
-    const period = document.getElementById('comparePeriod').value;
-    tableBody.innerHTML = '<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--muted);"><span class="spinner" style="margin-right:8px;"></span>Loading...</td></tr>';
+  const raw = document.getElementById('compareTickers').value;
+  const tickers = raw.split(',').map(t => t.trim()).filter(Boolean).slice(0, 3);
+  if (tickers.length < 2) {
+    showToast('Compare', 'Please enter at least two tickers (comma separated).', 'warning', 3000);
+    return;
+  }
+  const period = document.getElementById('comparePeriod').value;
+  emptyRow('Loading…');
 
-    fetch('/api/comparison/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
-        },
-        body: JSON.stringify({ tickers, period })
-    })
+  fetch('/api/comparison/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '',
+    },
+    body: JSON.stringify({ tickers, period }),
+  })
     .then(res => res.json())
     .then(payload => {
-        if (!payload.success) {
-            tableBody.innerHTML = '<tr><td colspan="8" style="padding:24px;text-align:center;color:#ff7575;">' + (payload.error || 'Unable to compare those assets.') + '</td></tr>';
-            return;
-        }
-        renderTable(payload.assets || []);
-        renderChart(payload.chart);
-        showToast('Compare', 'Comparison updated.', 'success', 2000);
+      if (!payload.success) {
+        emptyRow(payload.error || 'Unable to compare those assets.', 'var(--loss)');
+        return;
+      }
+      renderTable(payload.assets || []);
+      renderChart(payload.chart);
+      showToast('Compare', 'Comparison updated.', 'success', 2000);
     })
     .catch(err => {
-        tableBody.innerHTML = '<tr><td colspan="8" style="padding:24px;text-align:center;color:#ff7575;">' + (err.message || 'Network issue.') + '</td></tr>';
+      emptyRow(err.message || 'Network issue.', 'var(--loss)');
     });
 }
 
-comparisonForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-    runComparison();
+comparisonForm.addEventListener('submit', function (e) {
+  e.preventDefault();
+  runComparison();
 });
 
 function safeAttachTickerInput(input) {
-    if (!input) return;
-    if (window.attachTickerAutocomplete) {
-        window.attachTickerAutocomplete(input);
-    } else {
-        document.addEventListener('ticker-helper-ready', () => window.attachTickerAutocomplete && window.attachTickerAutocomplete(input), { once: true });
-    }
+  if (!input) return;
+  if (window.attachTickerAutocomplete) {
+    window.attachTickerAutocomplete(input);
+  } else {
+    document.addEventListener('ticker-helper-ready', () => window.attachTickerAutocomplete && window.attachTickerAutocomplete(input), { once: true });
+  }
 }
 
 safeAttachTickerInput(document.getElementById('compareTickers'));

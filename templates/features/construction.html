@@ -1,243 +1,293 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ feature.name }} — {{ market_name }} — FinSight{% endblock %}
+{% block meta_description %}Build an ML-optimized portfolio allocation across {{ market_name }} tickers using mean-variance optimization.{% endblock %}
 
 {% block content %}
-<style>
-    :root{
-      --bg:#0d1117;
-      --card:#15181d;
-      --muted:#9aa4ac;
-      --text:#e6eef1;
-      --accent-green:#18ff8f;
-      --accent-orange:#ff9b42;
-      --border:#23272b;
-    }
-    body{background:var(--bg);color:var(--text);padding-top:80px;}
-    .feature-container{max-width:1400px;margin:0 auto;padding:20px;}
-    .feature-header{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;}
-    .feature-header h1{color:var(--accent-orange);margin:0 0 8px 0;font-size:28px;}
-    .construction-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;}
-    .form-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;}
-    .form-group{margin-bottom:20px;}
-    .form-group label{display:block;margin-bottom:8px;color:var(--text);font-weight:600;}
-    .form-group input,.form-group select{width:100%;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);}
-    .btn-primary{background:var(--accent-green);color:#000;border:none;padding:12px 24px;border-radius:8px;font-weight:600;cursor:pointer;}
-    .allocation-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;}
-    .allocation-item{margin-bottom:20px;}
-    .allocation-header{display:flex;justify-content:space-between;margin-bottom:8px;}
-    .allocation-bar{height:16px;background:var(--bg);border-radius:8px;overflow:hidden;}
-    .allocation-fill{height:100%;background:var(--accent-green);transition:width 0.3s;}
-</style>
+<div class="page" style="max-width:1400px;">
 
-<div class="feature-container">
-    <div style="margin-bottom:16px;">
-        <a href="{% url 'market_detail' market %}" style="color:var(--accent-green);text-decoration:none;font-weight:600;">← Back to {{ market_name }}</a>
-    </div>
-    <div class="feature-header">
-        <h1>{{ feature.icon }} {{ feature.name }} - {{ market_name }}</h1>
-        <p>Build optimized portfolios with strategic asset allocation for {{ market_name }}</p>
-    </div>
+  <a href="{% url 'market_detail' market %}" style="color:var(--accent); text-decoration:none; font-weight:500; font-size:var(--text-sm); display:inline-flex; align-items:center; gap:4px; margin-bottom:var(--space-4);">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    Back to {{ market_name }}
+  </a>
 
-    <div class="construction-grid">
-        <div class="form-card">
-            <h3 style="color:var(--accent-green);margin-top:0;">Portfolio Builder</h3>
-            <form id="constructionForm">
-                {% csrf_token %}
-                <div class="form-group">
-                    <label>Investment Amount</label>
-                    <input type="number" placeholder="$100,000" id="investmentAmount" required>
-                </div>
-                <div class="form-group">
-                    <label>Tickers to include</label>
-                    <textarea id="customTickers" placeholder="e.g. AAPL, MSFT, TSLA" style="width:100%;min-height:80px;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);"></textarea>
-                    <small style="color:var(--muted);display:block;margin-top:6px;">Leave blank to use {{ market_name }} defaults. Supports up to 10 symbols.</small>
-                </div>
-                <div class="form-group">
-                    <label>Risk Tolerance</label>
-                    <select id="riskTolerance" required>
-                        <option value="conservative">Conservative</option>
-                        <option value="moderate">Moderate</option>
-                        <option value="aggressive">Aggressive</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Investment Horizon</label>
-                    <select id="horizon" required>
-                        <option value="short">Short Term (1-3 years)</option>
-                        <option value="medium">Medium Term (3-7 years)</option>
-                        <option value="long">Long Term (7+ years)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Rebalancing Frequency</label>
-                    <select id="rebalance" required>
-                        <option value="monthly">Monthly</option>
-                        <option value="quarterly">Quarterly</option>
-                        <option value="annually">Annually</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn-primary">Generate Portfolio</button>
-            </form>
+  <section class="card" style="margin-bottom: var(--space-5);">
+    <h1 class="display" style="color:var(--accent); margin:0 0 var(--space-1); font-size:var(--text-2xl);">{{ feature.name }} — {{ market_name }}</h1>
+    <p style="color:var(--muted); margin:0; font-size:var(--text-sm);">Build an optimized allocation across {{ market_name }} tickers using mean-variance optimization.</p>
+  </section>
+
+  <div style="display:grid; grid-template-columns: 360px 1fr; gap: var(--space-5); align-items:start;">
+
+    <form id="constructionForm" class="card" novalidate>
+      {% csrf_token %}
+      <div style="margin-bottom: var(--space-4);">
+        <label for="investmentAmount" style="display:block; font-weight:600; margin-bottom:var(--space-2); font-size:var(--text-sm);">Investment amount</label>
+        <input type="number" placeholder="100000" id="investmentAmount" value="100000" required style="width:100%; padding:10px 12px; background:var(--bg-raised); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:var(--text-sm);">
+      </div>
+
+      <div style="margin-bottom: var(--space-4);">
+        <label for="customTickers" style="display:block; font-weight:600; margin-bottom:var(--space-2); font-size:var(--text-sm);">Tickers to include</label>
+        <textarea id="customTickers" placeholder="e.g. AAPL, MSFT, TSLA" style="width:100%; min-height:80px; padding:10px 12px; background:var(--bg-raised); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:var(--text-sm); font-family: var(--font-body);"></textarea>
+        <small style="color:var(--muted); display:block; margin-top:6px; font-size:var(--text-xs);">Leave blank to use {{ market_name }} defaults. Supports up to 10 symbols, minimum 2.</small>
+      </div>
+
+      <div style="margin-bottom: var(--space-4);">
+        <label for="riskTolerance" style="display:block; font-weight:600; margin-bottom:var(--space-2); font-size:var(--text-sm);">Risk tolerance</label>
+        <select id="riskTolerance" required style="width:100%; padding:10px 12px; background:var(--bg-raised); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:var(--text-sm);">
+          <option value="conservative">Conservative</option>
+          <option value="moderate" selected>Moderate</option>
+          <option value="aggressive">Aggressive</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width:100%;">Generate portfolio</button>
+    </form>
+
+    <div>
+      <div id="emptyState" class="card" style="text-align:center; padding: var(--space-8) var(--space-5); color:var(--muted);">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true" style="margin-bottom:var(--space-3); opacity:0.5;"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/></svg>
+        <p style="margin:0; font-size:var(--text-sm);">Enter tickers and generate a portfolio to see the optimized allocation.</p>
+      </div>
+
+      <div id="resultSection" style="display:none;">
+
+        <div class="grid-3" style="grid-template-columns: repeat(3, 1fr); margin-bottom: var(--space-4);">
+          <div class="card">
+            <div style="color:var(--muted); font-size:var(--text-xs); margin-bottom:6px;">Expected return</div>
+            <div class="mono" id="expReturn" style="font-size:var(--text-xl); font-weight:600; color:var(--gain);">0%</div>
+          </div>
+          <div class="card">
+            <div style="color:var(--muted); font-size:var(--text-xs); margin-bottom:6px;">Expected volatility</div>
+            <div class="mono" id="expVol" style="font-size:var(--text-xl); font-weight:600;">0%</div>
+          </div>
+          <div class="card">
+            <div style="color:var(--muted); font-size:var(--text-xs); margin-bottom:6px;">Sharpe ratio</div>
+            <div class="mono" id="sharpe" style="font-size:var(--text-xl); font-weight:600; color:var(--accent);">0</div>
+          </div>
         </div>
 
-        <div class="allocation-card">
-            <h3 style="color:var(--accent-orange);margin-top:0;">Suggested Allocation</h3>
-            <div id="allocationResults">
-                <div class="allocation-item">
-                    <div class="allocation-header">
-                        <span>Large Cap Stocks</span>
-                        <span>40%</span>
-                    </div>
-                    <div class="allocation-bar">
-                        <div class="allocation-fill" style="width:40%;"></div>
-                    </div>
-                </div>
-                <div class="allocation-item">
-                    <div class="allocation-header">
-                        <span>Mid Cap Stocks</span>
-                        <span>25%</span>
-                    </div>
-                    <div class="allocation-bar">
-                        <div class="allocation-fill" style="width:25%;background:var(--accent-orange);"></div>
-                    </div>
-                </div>
-                <div class="allocation-item">
-                    <div class="allocation-header">
-                        <span>Bonds</span>
-                        <span>20%</span>
-                    </div>
-                    <div class="allocation-bar">
-                        <div class="allocation-fill" style="width:20%;background:var(--muted);"></div>
-                    </div>
-                </div>
-                <div class="allocation-item">
-                    <div class="allocation-header">
-                        <span>Commodities</span>
-                        <span>10%</span>
-                    </div>
-                    <div class="allocation-bar">
-                        <div class="allocation-fill" style="width:10%;background:var(--accent-green);"></div>
-                    </div>
-                </div>
-                <div class="allocation-item">
-                    <div class="allocation-header">
-                        <span>Cash</span>
-                        <span>5%</span>
-                    </div>
-                    <div class="allocation-bar">
-                        <div class="allocation-fill" style="width:5%;background:var(--border);"></div>
-                    </div>
-                </div>
-            </div>
+        <div class="grid-2" style="margin-bottom: var(--space-4);">
+          <div class="card">
+            <div style="color:var(--accent); font-weight:600; margin-bottom:var(--space-3); font-size:var(--text-sm);">Allocation</div>
+            <canvas id="allocationChart" role="img" aria-label="Portfolio allocation donut chart"></canvas>
+          </div>
+          <div class="card">
+            <div style="color:var(--accent); font-weight:600; margin-bottom:var(--space-3); font-size:var(--text-sm);">Efficient frontier</div>
+            <canvas id="frontierChart" role="img" aria-label="Efficient frontier scatter chart showing risk vs return tradeoff"></canvas>
+            <p style="color:var(--muted); font-size:var(--text-xs); margin: var(--space-2) 0 0;">Each point shows the lowest possible volatility for a given target return. Your portfolio is marked in gold.</p>
+          </div>
         </div>
-    </div>
 
-    <div class="form-card">
-        <h3 style="color:var(--accent-green);margin-top:0;">Recommended Positions</h3>
-        <table style="width:100%;border-collapse:collapse;">
+        <div class="coach" style="margin-bottom: var(--space-4);" id="portfolioCoach"></div>
+
+        <div class="card card-flush">
+          <table style="width:100%; border-collapse:collapse;">
             <thead>
-                <tr style="border-bottom:1px solid var(--border);">
-                    <th style="padding:12px;text-align:left;color:var(--accent-orange);">Symbol</th>
-                    <th style="padding:12px;text-align:left;color:var(--accent-orange);">Allocation</th>
-                    <th style="padding:12px;text-align:left;color:var(--accent-orange);">Amount</th>
-                    <th style="padding:12px;text-align:left;color:var(--accent-orange);">Rationale</th>
-                </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <th style="padding:var(--space-3) var(--space-4); text-align:left; color:var(--accent); font-size:var(--text-xs); text-transform:uppercase; letter-spacing:0.04em;">Symbol</th>
+                <th style="padding:var(--space-3) var(--space-4); text-align:left; color:var(--accent); font-size:var(--text-xs); text-transform:uppercase; letter-spacing:0.04em;">Allocation</th>
+                <th style="padding:var(--space-3) var(--space-4); text-align:left; color:var(--accent); font-size:var(--text-xs); text-transform:uppercase; letter-spacing:0.04em;">Amount</th>
+              </tr>
             </thead>
-            <tbody>
-                {% for ticker in tickers|slice:":6" %}
-                <tr style="border-bottom:1px solid var(--border);">
-                    <td style="padding:12px;"><strong>{{ ticker|slice:":10" }}</strong></td>
-                    <td style="padding:12px;">{{ forloop.counter|add:10|floatformat:1 }}%</td>
-                    <td style="padding:12px;">${{ forloop.counter|add:10000|floatformat:2 }}</td>
-                    <td style="padding:12px;color:var(--muted);">Strong fundamentals, good growth potential</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+            <tbody id="positionsBody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
+  </div>
 </div>
+{% endblock %}
 
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 const defaultTickers = [{% for ticker in tickers %}'{{ ticker }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+let allocationChartInstance, frontierChartInstance;
 
-document.getElementById('constructionForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const investmentAmount = document.getElementById('investmentAmount').value;
-    const riskTolerance = document.getElementById('riskTolerance').value;
-    const customTickerInput = document.getElementById('customTickers').value;
-    const parsedTickers = customTickerInput.split(',').map(t => t.trim()).filter(Boolean);
-    const tickers = parsedTickers.length ? parsedTickers : defaultTickers;
-    
-    const submitBtn = document.querySelector('button[type="submit"]');
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="spinner" style="margin-right:8px;"></span>Optimizing...';
-    
-    fetch('/api/optimize/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+const PALETTE = ['#D4A24C', '#4A9D78', '#4C7FD4', '#C45A4E', '#8B6FB3', '#3D8C9E', '#B3893D', '#6F9C4A'];
+
+function el(tag, props, children) {
+  const node = document.createElement(tag);
+  Object.entries(props || {}).forEach(([k, v]) => {
+    if (k === 'style') node.style.cssText = v;
+    else if (k === 'class') node.className = v;
+    else node.setAttribute(k, v);
+  });
+  (children || []).forEach(c => {
+    if (typeof c === 'string') node.appendChild(document.createTextNode(c));
+    else if (c) node.appendChild(c);
+  });
+  return node;
+}
+
+function renderAllocationChart(allocation) {
+  const ctx = document.getElementById('allocationChart').getContext('2d');
+  const labels = Object.keys(allocation);
+  const values = labels.map(t => allocation[t].percentage);
+  if (allocationChartInstance) allocationChartInstance.destroy();
+  allocationChartInstance = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{ data: values, backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]), borderWidth: 0 }],
+    },
+    options: {
+      plugins: { legend: { position: 'bottom', labels: { color: 'var(--text-dim)', font: { size: 11 } } } },
+    },
+  });
+}
+
+function renderFrontierChart(frontier, ownReturn, ownVol) {
+  const canvasEl = document.getElementById('frontierChart');
+  const container = canvasEl ? canvasEl.parentElement : null;
+  if (!container) return;
+  if (!frontier || !frontier.length) {
+    const canvas = container.querySelector('canvas');
+    if (canvas) canvas.style.display = 'none';
+    if (!container.querySelector('.frontier-empty')) {
+      const note = el('p', { class: 'frontier-empty', style: 'color:var(--muted); font-size:var(--text-xs); margin:0;' }, ['Efficient frontier unavailable for this selection (falls back to Monte Carlo when scipy is unavailable).']);
+      container.appendChild(note);
+    }
+    return;
+  }
+  const canvas = container.querySelector('canvas');
+  if (canvas) canvas.style.display = 'block';
+  const ctx = document.getElementById('frontierChart').getContext('2d');
+  if (frontierChartInstance) frontierChartInstance.destroy();
+  frontierChartInstance = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {
+          label: 'Efficient frontier',
+          data: frontier.map(p => ({ x: p.volatility, y: p.return })),
+          borderColor: '#4C7FD4',
+          backgroundColor: '#4C7FD4',
+          showLine: true,
+          pointRadius: 2,
         },
-        body: JSON.stringify({
-            tickers: tickers.slice(0, 10),
-            risk_tolerance: riskTolerance,
-            investment_amount: parseFloat(investmentAmount) || 100000
-        })
-    })
+        {
+          label: 'Your portfolio',
+          data: [{ x: ownVol, y: ownReturn }],
+          backgroundColor: '#D4A24C',
+          pointRadius: 7,
+          pointHoverRadius: 9,
+        },
+      ],
+    },
+    options: {
+      plugins: { legend: { position: 'bottom', labels: { color: 'var(--text-dim)', font: { size: 11 } } } },
+      scales: {
+        x: { title: { display: true, text: 'Volatility %', color: 'var(--muted)' }, ticks: { color: 'var(--muted)' } },
+        y: { title: { display: true, text: 'Return %', color: 'var(--muted)' }, ticks: { color: 'var(--muted)' } },
+      },
+    },
+  });
+}
+
+function renderCoach(data) {
+  const wrap = el('div');
+  const title = el('div', { class: 'coach-title' });
+  title.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v4m0 12v4M4.9 4.9l2.8 2.8m8.6 8.6l2.8 2.8M2 12h4m12 0h4M4.9 19.1l2.8-2.8m8.6-8.6l2.8-2.8"/></svg>';
+  title.appendChild(document.createTextNode(' Portfolio coach'));
+  wrap.appendChild(title);
+
+  const lines = [];
+  if (data.sharpe_ratio >= 1) {
+    lines.push({ badge: 'good', label: 'Stable', text: `Sharpe ratio of ${data.sharpe_ratio.toFixed(2)} indicates strong risk-adjusted returns for this mix.` });
+  } else if (data.sharpe_ratio >= 0.5) {
+    lines.push({ badge: 'watch', label: 'Watch', text: `Sharpe ratio of ${data.sharpe_ratio.toFixed(2)} is moderate — consider whether the volatility is worth the expected return.` });
+  } else {
+    lines.push({ badge: 'alert', label: 'Alert', text: `Sharpe ratio of ${data.sharpe_ratio.toFixed(2)} is low — return may not be compensating for the risk taken.` });
+  }
+  const allocationCount = Object.keys(data.allocation).length;
+  if (allocationCount < 4) {
+    lines.push({ badge: 'watch', label: 'Watch', text: `Only ${allocationCount} holdings — consider adding more tickers for diversification.` });
+  } else {
+    lines.push({ badge: 'good', label: 'Stable', text: `${allocationCount} holdings provide reasonable diversification.` });
+  }
+  lines.push({ badge: 'watch', label: 'Method', text: data.optimizer === 'scipy' ? 'Allocation solved via constrained mean-variance optimization (scipy SLSQP).' : 'Allocation estimated via Monte Carlo simulation (scipy unavailable).' });
+
+  lines.forEach(line => {
+    const row = el('div', { class: 'coach-line' });
+    row.appendChild(el('span', { class: 'coach-badge ' + line.badge }, [line.label]));
+    row.appendChild(el('span', {}, [line.text]));
+    wrap.appendChild(row);
+  });
+  return wrap;
+}
+
+document.getElementById('constructionForm').addEventListener('submit', function (e) {
+  e.preventDefault();
+  const investmentAmount = document.getElementById('investmentAmount').value;
+  const riskTolerance = document.getElementById('riskTolerance').value;
+  const customTickerInput = document.getElementById('customTickers').value;
+  const parsedTickers = customTickerInput.split(',').map(t => t.trim()).filter(Boolean);
+  const tickers = parsedTickers.length ? parsedTickers : defaultTickers;
+
+  if (tickers.length < 2) {
+    showToast('Validation error', 'Enter at least 2 tickers.', 'error', 3000);
+    return;
+  }
+
+  const submitBtn = document.querySelector('button[type="submit"]');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Optimizing…';
+
+  fetch('/api/optimize/', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '',
+    },
+    body: JSON.stringify({
+      tickers: tickers.slice(0, 10),
+      risk_tolerance: riskTolerance,
+      investment_amount: parseFloat(investmentAmount) || 100000,
+    }),
+  })
     .then(response => response.json())
     .then(data => {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = 'Generate Portfolio';
-        
-        if (data.success) {
-            const allocationDiv = document.getElementById('allocationResults');
-            allocationDiv.innerHTML = '';
-            
-            // Add allocation items
-            for (const [ticker, info] of Object.entries(data.allocation)) {
-                const item = document.createElement('div');
-                item.className = 'allocation-item';
-                item.innerHTML = `
-                    <div class="allocation-header">
-                        <span>${ticker}</span>
-                        <span>${info.percentage}%</span>
-                    </div>
-                    <div class="allocation-bar">
-                        <div class="allocation-fill" style="width:${info.percentage}%;"></div>
-                    </div>
-                `;
-                allocationDiv.appendChild(item);
-            }
-            
-            // Update recommended positions table
-            const tableBody = document.querySelector('.form-card table tbody');
-            if (tableBody) {
-                tableBody.innerHTML = '';
-                let rowNum = 0;
-                for (const [ticker, info] of Object.entries(data.allocation)) {
-                    rowNum++;
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td style="padding:12px;"><strong>${ticker}</strong></td>
-                        <td style="padding:12px;">${info.percentage}%</td>
-                        <td style="padding:12px;">$${info.amount.toFixed(2)}</td>
-                        <td style="padding:12px;color:var(--muted);">ML-optimized allocation based on risk-return analysis</td>
-                    `;
-                    tableBody.appendChild(row);
-                }
-            }
-            
-            // Show portfolio metrics
-            alert(`Portfolio Optimized!\n\nExpected Return: ${data.expected_return}%\nExpected Volatility: ${data.expected_volatility}%\nSharpe Ratio: ${data.sharpe_ratio}`);
-        } else {
-            alert('Error: ' + (data.error || 'Unable to optimize portfolio'));
-        }
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Generate portfolio';
+
+      if (!data.success) {
+        showToast('Optimizer', data.error || 'Unable to optimize portfolio.', 'error', 4000);
+        return;
+      }
+
+      document.getElementById('emptyState').style.display = 'none';
+      document.getElementById('resultSection').style.display = 'block';
+
+      document.getElementById('expReturn').textContent = `${data.expected_return.toFixed(2)}%`;
+      document.getElementById('expVol').textContent = `${data.expected_volatility.toFixed(2)}%`;
+      document.getElementById('sharpe').textContent = data.sharpe_ratio.toFixed(2);
+
+      renderAllocationChart(data.allocation);
+      renderFrontierChart(data.efficient_frontier, data.expected_return, data.expected_volatility);
+
+      const coachEl = document.getElementById('portfolioCoach');
+      coachEl.innerHTML = '';
+      coachEl.appendChild(renderCoach(data));
+
+      const tbody = document.getElementById('positionsBody');
+      tbody.innerHTML = '';
+      Object.entries(data.allocation).forEach(([ticker, info]) => {
+        const row = el('tr', { style: 'border-bottom:1px solid var(--border);' });
+        row.appendChild(el('td', { class: 'mono', style: 'padding:var(--space-3) var(--space-4); font-weight:600;' }, [ticker]));
+        row.appendChild(el('td', { class: 'mono', style: 'padding:var(--space-3) var(--space-4);' }, [`${info.percentage}%`]));
+        row.appendChild(el('td', { class: 'mono', style: 'padding:var(--space-3) var(--space-4);' }, [`$${info.amount.toFixed(2)}`]));
+        tbody.appendChild(row);
+      });
+
+      showToast('Portfolio optimizer', 'Allocation updated.', 'success', 2500);
     })
     .catch(error => {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Generate Portfolio';
-        alert('Error: ' + (error.message || 'Failed to optimize portfolio'));
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Generate portfolio';
+      showToast('Network', error.message || 'Failed to optimize portfolio.', 'error', 4000);
     });
 });
 </script>
 {% endblock %}
-

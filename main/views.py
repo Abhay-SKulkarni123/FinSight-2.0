@@ -12,7 +12,7 @@ import pandas as pd
 import numpy as np
 from .ml_models import PricePredictor, RiskAnalyzer, PortfolioOptimizer
 from . import services
-from django_ratelimit.decorators import ratelimit
+from django_ratelimit.decorators import ratelimit # type: ignore
 
 # Market definitions with sample tickers - Updated with TradingView-compatible symbols
 MARKETS = {
@@ -1169,3 +1169,18 @@ def ticker_search_api(request):
         return JsonResponse({'success': True, 'results': results})
     except Exception as exc:
         return JsonResponse({'success': False, 'results': [], 'error': str(exc)}, status=500)
+    
+@require_http_methods(["GET"])
+@ratelimit(key='ip', rate='20/m', method='GET', block=True)
+def market_analysis_api(request, market):
+    """Return real, aggregated market analysis (replaces hardcoded template values)."""
+    if market not in MARKETS:
+        return JsonResponse({'error': 'Unknown market'}, status=404)
+
+    tickers = MARKETS[market]['tickers']
+    analysis = services.get_market_analysis(market, tickers)
+
+    if analysis is None:
+        return JsonResponse({'error': 'Unable to fetch market analysis right now.'}, status=503)
+
+    return JsonResponse({'success': True, 'market': market, 'analysis': analysis})

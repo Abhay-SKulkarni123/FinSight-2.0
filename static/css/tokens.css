@@ -1,0 +1,110 @@
+/* ==========================================================================
+   FinSight Design Tokens
+   Single source of truth. Every other stylesheet derives from this file.
+   ========================================================================== */
+
+:root {
+  /* ---- Color: dark mode (default) ---- */
+  --bg: #0B1220;
+  --bg-raised: #121B2E;
+  --card: #151F35;
+  --card-hover: #1B2640;
+  --border: #243150;
+  --border-strong: #344266;
+
+  --text: #E9EDF5;
+  --text-dim: #B6BFD4;
+  --muted: #7A8699;
+
+  --gain: #4A9D78;
+  --gain-bg: rgba(74, 157, 120, 0.12);
+  --loss: #C45A4E;
+  --loss-bg: rgba(196, 90, 78, 0.12);
+
+  --accent: #D4A24C;
+  --accent-dim: rgba(212, 162, 76, 0.14);
+  --accent-strong: #E8B868;
+
+  --info: #4C7FD4;
+  --info-bg: rgba(76, 127, 212, 0.12);
+
+  /* ---- Typography ---- */
+  --font-display: 'Fraunces', 'Source Serif 4', Georgia, serif;
+  --font-body: 'Inter', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
+  --text-4xl: 3rem;
+
+  /* ---- Spacing scale ---- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-8: 3rem;
+  --space-10: 4rem;
+
+  /* ---- Radius & elevation ---- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.35);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.45);
+  --shadow-glow-accent: 0 0 0 1px rgba(212,162,76,0.3), 0 8px 24px rgba(212,162,76,0.12);
+
+  /* ---- Motion ---- */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+}
+
+/* ---- Color: light mode ---- */
+.light {
+  --bg: #F5F3EC;
+  --bg-raised: #FFFFFF;
+  --card: #FFFFFF;
+  --card-hover: #FBFAF6;
+  --border: #E3E0D4;
+  --border-strong: #CFCABA;
+
+  --text: #1B2026;
+  --text-dim: #4A5160;
+  --muted: #767D8A;
+
+  --gain: #2F7D57;
+  --gain-bg: rgba(47, 125, 87, 0.08);
+  --loss: #A8443A;
+  --loss-bg: rgba(168, 68, 58, 0.08);
+
+  --accent: #B07F2E;
+  --accent-dim: rgba(176, 127, 46, 0.1);
+  --accent-strong: #8F6722;
+
+  --info: #2F5FAE;
+  --info-bg: rgba(47, 95, 174, 0.08);
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.12);
+}
+
+/* ---- Reduced motion respect ---- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

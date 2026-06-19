@@ -1,277 +1,201 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FinSight</title>
-  {% load static %}
-  <style>
-    :root{
-      --bg:#0d1117;
-      --card:#15181d;
-      --muted:#9aa4ac;
-      --text:#e6eef1;
-      --accent-green:#18ff8f;
-      --accent-orange:#ff9b42;
-      --border:#23272b;
-    }
-    .light{
-      --bg:#f6f7f9;
-      --card:#ffffff;
-      --muted:#59626a;
-      --text:#0f1720;
-      --accent-green:#00aa66;
-      --accent-orange:#ff6b00;
-      --border:#e6e9ec;
-    }
-    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;}
-    body{background:var(--bg);color:var(--text);transition:background .25s,color .25s;}
-    nav{position:fixed;top:0;left:0;right:0;height:68px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.35);border-bottom:1px solid var(--border);z-index:1000;padding:0 18px;backdrop-filter:blur(8px);}
-    .nav-left{position:absolute;left:18px;display:flex;align-items:center;gap:10px;}
-    .app-logo{width:34px;height:34px;display:inline-block;}
-    .app-title{font-weight:700;font-size:20px;color:var(--accent-green);letter-spacing:0.2px;text-decoration:none;}
-    .nav-center{display:flex;gap:16px;align-items:center;justify-content:center;overflow:auto;white-space:nowrap;padding:0 48px;}
-    .market-pill{color:var(--muted);padding:8px 12px;border-radius:999px;cursor:pointer;transition:all .18s;font-weight:600;font-size:14px;text-decoration:none;display:inline-block;}
-    .market-pill:hover{color:var(--text);transform:translateY(-3px);}
-    .nav-right{position:absolute;right:18px;display:flex;gap:10px;align-items:center;}
-    .icon-btn{background:var(--card);border:1px solid var(--border);padding:8px 12px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--text);font-size:14px;font-weight:600;transition:all 0.2s;}
-    .icon-btn:hover{transform:translateY(-2px);border-color:var(--accent-green);}
-    .guide-panel{position:fixed;right:-380px;top:78px;width:360px;height:calc(100% - 160px);background:var(--card);border:1px solid var(--border);border-radius:10px 0 0 10px;padding:18px;box-shadow:-8px 12px 40px rgba(0,0,0,0.6);transition:right .28s;z-index:1200;overflow:auto;}
-    .guide-panel.open{right:0;}
-    .guide-panel h3{margin-top:0;color:var(--accent-orange);}
-    .guide-panel ul{padding-left:18px;color:var(--muted);line-height:1.8;}
-    .guide-panel li{margin-bottom:8px;}
-    footer{text-align:center;padding:22px 0;color:var(--muted);}
-    
-    /* Loading Spinner */
-    .spinner{display:inline-block;width:20px;height:20px;border:3px solid var(--border);border-top-color:var(--accent-green);border-radius:50%;animation:spin 0.8s linear infinite;}
-    @keyframes spin{to{transform:rotate(360deg);}}
-    .loading-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(13,17,23,0.8);display:flex;align-items:center;justify-content:center;z-index:10;border-radius:12px;}
-    .skeleton{background:linear-gradient(90deg,var(--card) 25%,var(--border) 50%,var(--card) 75%);background-size:200% 100%;animation:loading 1.5s ease-in-out infinite;}
-    @keyframes loading{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
-    .chart-skeleton{height:400px;border-radius:8px;margin:8px 0;}
-    
-    /* Smooth Transitions */
-    *{transition:background-color 0.2s ease,color 0.2s ease,border-color 0.2s ease;}
-    .fade-in{animation:fadeIn 0.3s ease-in;}
-    @keyframes fadeIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-    
-    /* Mobile Responsive */
-    @media (max-width:768px){
-      nav{height:60px;padding:0 12px;}
-      .nav-center{gap:8px;padding:0 24px;font-size:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
-      .market-pill{padding:6px 10px;font-size:12px;white-space:nowrap;}
-      .nav-left,.nav-right{gap:6px;}
-      .app-title{font-size:18px;}
-      .guide-panel{width:100%;right:-100%;top:60px;height:calc(100% - 60px);border-radius:0;}
-      .icon-btn{padding:6px 10px;font-size:12px;}
-      .toast-container{right:10px;left:10px;max-width:none;}
-      .toast{min-width:auto;width:100%;}
-      .page{padding-top:80px !important;}
-      .grid{grid-template-columns:1fr !important;}
-      .chart-wrap{min-height:300px;}
-    }
-    
-    @media (max-width:480px){
-      .nav-center{font-size:11px;gap:6px;}
-      .market-pill{padding:5px 8px;font-size:11px;}
-      .app-title{font-size:16px;}
-    }
-    
-    /* Tooltip */
-    .tooltip{position:relative;cursor:help;}
-    .tooltip:hover::after{content:attr(data-tooltip);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:var(--card);color:var(--text);padding:8px 12px;border-radius:6px;font-size:12px;white-space:nowrap;z-index:2000;border:1px solid var(--border);box-shadow:0 4px 12px rgba(0,0,0,0.3);margin-bottom:4px;}
-    
-    /* Toast Notifications */
-    .toast-container{position:fixed;top:80px;right:20px;z-index:3000;display:flex;flex-direction:column;gap:12px;max-width:400px;}
-    .toast{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 18px;box-shadow:0 4px 20px rgba(0,0,0,0.4);display:flex;align-items:center;gap:12px;animation:slideInRight 0.3s ease-out;min-width:300px;}
-    .toast.success{border-left:4px solid var(--accent-green);}
-    .toast.error{border-left:4px solid #ff4444;}
-    .toast.info{border-left:4px solid var(--accent-orange);}
-    .toast-icon{font-size:20px;flex-shrink:0;}
-    .toast-content{flex:1;}
-    .toast-title{font-weight:600;color:var(--text);margin-bottom:4px;font-size:14px;}
-    .toast-message{color:var(--muted);font-size:13px;line-height:1.4;}
-    .toast-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:0;width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-    .toast-close:hover{color:var(--text);}
-    @keyframes slideInRight{from{transform:translateX(400px);opacity:0;}to{transform:translateX(0);opacity:1;}}
-    @keyframes slideOutRight{to{transform:translateX(400px);opacity:0;}}
-    .toast.hiding{animation:slideOutRight 0.3s ease-out forwards;}
+  <title>{% block title %}FinSight — Financial Markets Intelligence{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}Real-time data, ML price predictions, and risk analysis across global and Indian markets.{% endblock %}">
 
-    /* Chatbot placement */
-    #botpress-webchat,
-    #bp-web-widget,
-    .bpw-floating-button{
-      position:fixed !important;
-      bottom:24px !important;
-      right:24px !important;
-      z-index:3600 !important;
-    }
-    #botpress-webchat iframe,
-    #bp-web-widget iframe{
-      max-height:80vh !important;
-      border-radius:20px !important;
-      box-shadow:0 20px 40px rgba(0,0,0,0.45);
-    }
-    
-    /* Empty State */
-    .empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
-    .empty-state-icon{font-size:64px;margin-bottom:16px;opacity:0.5;}
-    .empty-state-title{font-size:20px;font-weight:600;color:var(--text);margin-bottom:8px;}
-    .empty-state-message{font-size:14px;line-height:1.6;max-width:400px;margin:0 auto;}
-    
-    /* Form Validation */
-    .form-group.error input,.form-group.error select{border-color:#ff4444;}
-    .form-error{color:#ff4444;font-size:12px;margin-top:4px;display:block;}
-    .form-success{color:var(--accent-green);font-size:12px;margin-top:4px;display:block;}
-  </style>
+  <meta property="og:title" content="{% block og_title %}FinSight{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}Your all-in-one financial markets intelligence platform.{% endblock %}">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="{% static 'img/og-cover.png' %}">
+
+  <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+  <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
+
+  <link rel="stylesheet" href="{% static 'css/tokens.css' %}">
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  {% block extra_head %}{% endblock %}
 </head>
 <body>
 
-  <!-- Navbar -->
-  <nav>
-    <div class="nav-left">
-      <div class="app-logo" aria-hidden="true">
-        <svg viewBox="0 0 48 48" width="34" height="34" xmlns="http://www.w3.org/2000/svg" fill="none">
-          <rect width="48" height="48" rx="10" fill="url(#g)"/>
-          <defs>
-            <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
-              <stop offset="0" stop-color="#18ff8f" stop-opacity="0.95"/>
-              <stop offset="1" stop-color="#ff9b42" stop-opacity="0.95"/>
-            </linearGradient>
-          </defs>
-          <path d="M8 30 L18 18 L26 26 L36 12 L40 16" stroke="#072018" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <a href="#main-content" class="sr-only-focusable" style="position:absolute;left:-9999px;top:0;">Skip to main content</a>
+
+  <nav class="site-nav" aria-label="Primary">
+    <div class="nav-inner">
+      <a href="{% url 'home' %}" class="nav-brand" aria-label="FinSight home">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+          <path d="M3 17l5-5 4 4 8-9"/>
         </svg>
+        FinSight
+      </a>
+
+      <div class="nav-groups" id="navGroups">
+
+        <div class="nav-group">
+          <button class="nav-group-trigger" aria-expanded="false" aria-haspopup="true" data-group="equities">
+            Equities
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="nav-dropdown" role="menu">
+            <a href="{% url 'market_detail' 'stocks' %}" role="menuitem" {% if market_name == 'stocks' %}class="active" aria-current="page"{% endif %}>Stocks</a>
+            <a href="{% url 'market_detail' 'indian_markets' %}" role="menuitem" {% if market_name == 'indian_markets' %}class="active" aria-current="page"{% endif %}>Indian Markets</a>
+            <a href="{% url 'market_detail' 'indices' %}" role="menuitem" {% if market_name == 'indices' %}class="active" aria-current="page"{% endif %}>Indices</a>
+            <a href="{% url 'market_detail' 'etfs' %}" role="menuitem" {% if market_name == 'etfs' %}class="active" aria-current="page"{% endif %}>ETFs</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <button class="nav-group-trigger" aria-expanded="false" aria-haspopup="true" data-group="macro">
+            Macro &amp; FX
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="nav-dropdown" role="menu">
+            <a href="{% url 'market_detail' 'forex' %}" role="menuitem" {% if market_name == 'forex' %}class="active" aria-current="page"{% endif %}>Forex</a>
+            <a href="{% url 'market_detail' 'bonds' %}" role="menuitem" {% if market_name == 'bonds' %}class="active" aria-current="page"{% endif %}>Bonds</a>
+            <a href="{% url 'market_detail' 'energy' %}" role="menuitem" {% if market_name == 'energy' %}class="active" aria-current="page"{% endif %}>Energy</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <button class="nav-group-trigger" aria-expanded="false" aria-haspopup="true" data-group="alt">
+            Alt Assets
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="nav-dropdown" role="menu">
+            <a href="{% url 'market_detail' 'crypto' %}" role="menuitem" {% if market_name == 'crypto' %}class="active" aria-current="page"{% endif %}>Crypto</a>
+            <a href="{% url 'market_detail' 'metals' %}" role="menuitem" {% if market_name == 'metals' %}class="active" aria-current="page"{% endif %}>Metals</a>
+            <a href="{% url 'market_detail' 'futures' %}" role="menuitem" {% if market_name == 'futures' %}class="active" aria-current="page"{% endif %}>Futures</a>
+            <a href="{% url 'market_detail' 'commodities' %}" role="menuitem" {% if market_name == 'commodities' %}class="active" aria-current="page"{% endif %}>Commodities</a>
+          </div>
+        </div>
+
       </div>
-      <a href="{% url 'home' %}" class="app-title">FinSight</a>
-    </div>
-    <div class="nav-center">
-      <a href="{% url 'home' %}" class="market-pill" style="color:var(--accent-green);">HOME</a>
-      <a href="/markets/stocks/" class="market-pill">STOCKS</a>
-      <a href="/markets/crypto/" class="market-pill">CRYPTO</a>
-      <a href="/markets/indices/" class="market-pill">INDICES</a>
-      <a href="/markets/forex/" class="market-pill">FOREX</a>
-      <a href="/markets/metals/" class="market-pill">METALS</a>
-      <a href="/markets/energy/" class="market-pill">ENERGY</a>
-      <a href="/markets/bonds/" class="market-pill">BONDS</a>
-      <a href="/markets/etfs/" class="market-pill">ETFS</a>
-      <a href="/markets/futures/" class="market-pill">FUTURES</a>
-      <a href="/markets/commodities/" class="market-pill">COMMODITIES</a>
-    </div>
-    <div class="nav-right">
-      <button class="icon-btn tooltip" id="themeBtn" data-tooltip="Toggle between light and dark theme" aria-label="Toggle theme">🌓 Theme</button>
-      <button class="icon-btn tooltip" id="guideBtn" data-tooltip="View chart analysis guide" aria-label="Open chart guide">📖 Guide</button>
+
+      <div class="nav-actions">
+        <button class="btn-icon" id="themeBtn" aria-label="Toggle light and dark theme" title="Toggle theme">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.4 6.4l-.7-.7M6.3 6.3l-.7-.7m12.8 0l-.7.7M6.3 17.7l-.7.7M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
+        </button>
+        <button class="btn-icon" id="guideBtn" aria-label="Open chart analysis guide" aria-expanded="false" title="Chart guide">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 016.5 17H20M4 4.5A2.5 2.5 0 016.5 2H20v15H6.5A2.5 2.5 0 004 19.5v-15z"/></svg>
+        </button>
+        <button class="btn-icon nav-mobile-toggle" id="mobileNavBtn" aria-label="Open navigation menu" aria-expanded="false">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
     </div>
   </nav>
 
-  <aside id="guidePanel" class="guide-panel" aria-hidden="true">
-    <h3>Chart Analysis Guide</h3>
-    <p style="color:var(--muted);margin-top:6px;">Understanding chart patterns and probabilities for different markets:</p>
-    
-    <h4 style="color:var(--accent-green);margin-top:16px;margin-bottom:8px;">📈 Chart Patterns & Probabilities</h4>
-    <ul>
-      <li><b>Head and Shoulders:</b> 85% probability of trend reversal when pattern completes</li>
-      <li><b>Double Top/Bottom:</b> 75% probability of reversal, stronger confirmation needed</li>
-      <li><b>Triangle Patterns:</b> 60-70% probability of continuation in direction of trend</li>
-      <li><b>Flag/Pennant:</b> 80% probability of continuation after brief consolidation</li>
-      <li><b>Cup and Handle:</b> 70% probability of bullish breakout</li>
-      <li><b>Wedge Patterns:</b> 65% probability of reversal when pattern breaks</li>
+  <div id="mobileNavPanel" class="card" style="display:none; position:fixed; top:64px; left:0; right:0; z-index:999; margin:0; border-radius:0; border-top:none; max-height:calc(100vh - 64px); overflow:auto;">
+    <div style="padding: var(--space-4);">
+      <p class="mono" style="font-size:var(--text-xs); color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin:0 0 var(--space-2);">Equities</p>
+      <a href="{% url 'market_detail' 'stocks' %}" style="display:block; padding:var(--space-2) 0; text-decoration:none; color:var(--text);">Stocks</a>
+      <a href="{% url 'market_detail' 'indian_markets' %}" style="display:block; padding:var(--space-2) 0; text-decoration:none; color:var(--text);">Indian Markets</a>
+      <a href="{% url 'market_detail' 'indices' %}" style="display:block; padding:var(--space-2) 0; text-decoration:none; color:var(--text);">Indices</a>
+      <a href="{% url 'market_detail' 'etfs' %}" style="display:block; padding:var(--space-2) 0; text-decoration:none; color:var(--text);">ETFs</a>
+      <p class="mono" style="font-size:var(--text-xs); color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin:var(--space-4) 0 var(--space-2);">Macro &amp; FX</p>
+      <a href="{% url 'market_detail' 'forex' %}" style="display:block; padding:var(--space-2) 0; text-decoration:none; color:var(--text);">Forex</a>
+      <a href="{% url 'market_detail' 'bonds' %}" style="display:block; padding:var(--space-2) 0; text-decoration:none; color:var(--text);">Bonds</a>
+      <a href="{% url 'market_detail' 'energy' %}" style="display:block; padding:var(--space-2) 0; text-decoration:none; color:var(--text);">Energy</a>
+      <p class="mono" style="font-size:var(--text-xs); color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin:var(--space-4) 0 var(--space-2);">Alt assets</p>
+      <a href="{% url 'market_detail' 'crypto' %}" style="display:block; padding:var(--space-2) 0; text-decoration:none; color:var(--text);">Crypto</a>
+      <a href="{% url 'market_detail' 'metals' %}" style="display:block; padding:var(--space-2) 0; text-decoration:none; color:var(--text);">Metals</a>
+      <a href="{% url 'market_detail' 'futures' %}" style="display:block; padding:var(--space-2) 0; text-decoration:none; color:var(--text);">Futures</a>
+      <a href="{% url 'market_detail' 'commodities' %}" style="display:block; padding:var(--space-2) 0; text-decoration:none; color:var(--text);">Commodities</a>
+    </div>
+  </div>
+
+  <aside id="guidePanel" class="card" aria-hidden="true" style="position:fixed; right:-400px; top:76px; width:360px; max-height:calc(100vh - 110px); border-radius: var(--radius-lg) 0 0 var(--radius-lg); box-shadow: var(--shadow-lg); transition: right var(--duration-base) var(--ease); z-index:1200; overflow:auto;">
+    <h3 class="display" style="margin-top:0; color:var(--accent); font-size:var(--text-lg);">Chart Analysis Guide</h3>
+    <p style="color:var(--muted); margin-top:6px; font-size:var(--text-sm);">Understanding chart patterns and probabilities for different markets:</p>
+
+    <h4 style="color:var(--gain); margin-top:16px; margin-bottom:8px; font-size:var(--text-sm);">Chart patterns &amp; probabilities</h4>
+    <ul style="padding-left:18px; color:var(--text-dim); line-height:1.8; font-size:var(--text-sm);">
+      <li><strong>Head and shoulders:</strong> 85% probability of trend reversal when pattern completes</li>
+      <li><strong>Double top/bottom:</strong> 75% probability of reversal, stronger confirmation needed</li>
+      <li><strong>Triangle patterns:</strong> 60-70% probability of continuation in direction of trend</li>
+      <li><strong>Flag/pennant:</strong> 80% probability of continuation after brief consolidation</li>
+      <li><strong>Cup and handle:</strong> 70% probability of bullish breakout</li>
+      <li><strong>Wedge patterns:</strong> 65% probability of reversal when pattern breaks</li>
     </ul>
 
-    <h4 style="color:var(--accent-green);margin-top:16px;margin-bottom:8px;">📊 Technical Indicators</h4>
-    <ul>
-      <li><b>RSI (14):</b> Above 70 = 70% overbought probability, Below 30 = 70% oversold probability</li>
-      <li><b>MACD Crossover:</b> 60-65% probability of trend continuation when signal line crosses</li>
-      <li><b>Moving Averages:</b> Price above MA(50) = 65% bullish probability, below = 65% bearish</li>
-      <li><b>Bollinger Bands:</b> Price touching upper band = 60% reversal probability, lower = 60% bounce</li>
-      <li><b>Volume Confirmation:</b> 75% probability of trend strength when volume supports price movement</li>
-      <li><b>Support/Resistance:</b> 70% probability of bounce at support, rejection at resistance</li>
+    <h4 style="color:var(--gain); margin-top:16px; margin-bottom:8px; font-size:var(--text-sm);">Technical indicators</h4>
+    <ul style="padding-left:18px; color:var(--text-dim); line-height:1.8; font-size:var(--text-sm);">
+      <li><strong>RSI (14):</strong> Above 70 = overbought, below 30 = oversold</li>
+      <li><strong>MACD crossover:</strong> 60-65% probability of trend continuation when signal line crosses</li>
+      <li><strong>Moving averages:</strong> Price above MA(50) = 65% bullish probability, below = 65% bearish</li>
+      <li><strong>Bollinger bands:</strong> Price touching upper band = 60% reversal probability, lower = 60% bounce</li>
+      <li><strong>Volume confirmation:</strong> 75% probability of trend strength when volume supports price movement</li>
+      <li><strong>Support/resistance:</strong> 70% probability of bounce at support, rejection at resistance</li>
     </ul>
 
-    <h4 style="color:var(--accent-green);margin-top:16px;margin-bottom:8px;">🎯 Market-Specific Insights</h4>
-    <ul>
-      <li><b>Stocks + MA(20/50) + Volume:</b> 70% accuracy for trend strength & confirmations</li>
-      <li><b>Crypto + RSI + MACD:</b> 65% accuracy for momentum and divergence signals</li>
-      <li><b>Indices + MACD + ADX:</b> 68% accuracy for market momentum vs trend strength</li>
-      <li><b>Forex + Bollinger Bands:</b> 72% accuracy for volatility squeeze & breakout signals</li>
-      <li><b>Commodities + Volume:</b> 70% accuracy for supply-demand pressure indicators</li>
-      <li><b>Bonds + Yield Curves:</b> 75% accuracy for economic cycle predictions</li>
-    </ul>
-
-    <p style="color:var(--muted);margin-top:16px;font-size:12px;font-style:italic;">Note: Probabilities are based on historical patterns and should be used with risk management strategies.</p>
+    <p style="color:var(--muted); margin-top:16px; font-size:var(--text-xs); font-style:italic;">Probabilities are based on historical patterns and should be used alongside risk management strategies, not as guarantees.</p>
   </aside>
 
+  <main id="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <div class="toast-stack" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
+  <footer>&copy; 2026 FinSight — Smart Financial Markets</footer>
+
   <script>
-    // Theme toggle
     let isLight = localStorage.getItem('theme') === 'light';
     if (isLight) document.body.classList.add('light');
-    
+
     document.getElementById('themeBtn')?.addEventListener('click', function() {
       isLight = !isLight;
       document.body.classList.toggle('light', isLight);
       localStorage.setItem('theme', isLight ? 'light' : 'dark');
     });
 
-    // Guide panel toggle
     document.getElementById('guideBtn')?.addEventListener('click', function() {
       const panel = document.getElementById('guidePanel');
-      if (panel) panel.classList.toggle('open');
+      const btn = document.getElementById('guideBtn');
+      if (!panel) return;
+      const isOpen = panel.style.right === '0px';
+      panel.style.right = isOpen ? '-400px' : '0px';
+      panel.setAttribute('aria-hidden', isOpen ? 'true' : 'false');
+      btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
     });
+
+    document.getElementById('mobileNavBtn')?.addEventListener('click', function() {
+      const panel = document.getElementById('mobileNavPanel');
+      const btn = document.getElementById('mobileNavBtn');
+      const isOpen = panel.style.display === 'block';
+      panel.style.display = isOpen ? 'none' : 'block';
+      btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+    });
+
+    (function setupNavGroups() {
+      const triggers = document.querySelectorAll('.nav-group-trigger');
+      function closeAll(except) {
+        triggers.forEach(t => { if (t !== except) t.setAttribute('aria-expanded', 'false'); });
+      }
+      triggers.forEach(trigger => {
+        trigger.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const isOpen = trigger.getAttribute('aria-expanded') === 'true';
+          closeAll(trigger);
+          trigger.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+        });
+      });
+      document.addEventListener('click', () => closeAll(null));
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAll(null); });
+    })();
   </script>
 
-  {% block content %}{% endblock %}
-
-  <!-- Toast Container -->
-  <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
-
-  <!-- Footer -->
-  <footer>&copy; 2025 FinSight — Smart Financial Markets</footer>
-
-  <script>
-    // Toast Notification System
-    function showToast(title, message, type = 'info', duration = 4000) {
-      const container = document.getElementById('toastContainer');
-      if (!container) return;
-      
-      const toast = document.createElement('div');
-      toast.className = `toast ${type}`;
-      
-      const icons = {
-        success: '✅',
-        error: '❌',
-        info: 'ℹ️',
-        warning: '⚠️'
-      };
-      
-      toast.innerHTML = `
-        <div class="toast-icon">${icons[type] || icons.info}</div>
-        <div class="toast-content">
-          <div class="toast-title">${title}</div>
-          <div class="toast-message">${message}</div>
-        </div>
-        <button class="toast-close" onclick="this.parentElement.remove()" aria-label="Close">×</button>
-      `;
-      
-      container.appendChild(toast);
-      
-      // Auto remove after duration
-      setTimeout(() => {
-        toast.classList.add('hiding');
-        setTimeout(() => toast.remove(), 300);
-      }, duration);
-    }
-    
-    // Make toast function globally available
-    window.showToast = showToast;
-  </script>
+  <script src="{% static 'js/toast.js' %}"></script>
+  <script src="{% static 'js/tv-loader.js' %}"></script>
 
   <script>
     (function() {
       const cache = new Map();
       function fetchTickerSuggestions(query) {
-        if (cache.has(query)) {
-          return Promise.resolve(cache.get(query));
-        }
+        if (cache.has(query)) return Promise.resolve(cache.get(query));
         return fetch(`/api/tickers/?q=${encodeURIComponent(query)}&t=${Date.now()}`)
           .then(res => res.json())
           .then(data => {
@@ -305,9 +229,13 @@
           debounce = setTimeout(() => {
             fetchTickerSuggestions(query).then(results => {
               if (!datalist) return;
-              datalist.innerHTML = results.map(r =>
-                `<option value="${r.symbol}">${r.name} ${r.exchange ? '(' + r.exchange + ')' : ''}</option>`
-              ).join('');
+              datalist.innerHTML = '';
+              results.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r.symbol;
+                opt.textContent = `${r.name || ''} ${r.exchange ? '(' + r.exchange + ')' : ''}`.trim();
+                datalist.appendChild(opt);
+              });
             });
           }, 250);
         });
@@ -330,28 +258,11 @@
       const observer = new MutationObserver(setPosition);
       observer.observe(document.body, {childList: true, subtree: true});
       setPosition();
-      <script>
-    (function dockGuideBot(){
-      if (!window.MutationObserver) return;
-      const setPosition = () => {
-        document.querySelectorAll('#botpress-webchat,#bp-web-widget,.bpw-floating-button').forEach(node => {
-          node.style.position = 'fixed';
-          node.style.bottom = '24px';
-          node.style.right = '24px';
-          node.style.zIndex = '3600';
-        });
-      };
-      const observer = new MutationObserver(setPosition);
-      observer.observe(document.body, {childList: true, subtree: true});
-      setPosition();
-    })();
-  </script>
-  <script src="https://cdn.botpress.cloud/webchat/v3.3/inject.js" defer></script>
-  <script src="https://files.bpcontent.cloud/2025/10/17/08/20251017080016-5U17I1GI.js" defer></script>
     })();
   </script>
   <script src="https://cdn.botpress.cloud/webchat/v3.3/inject.js" defer></script>
   <script src="https://files.bpcontent.cloud/2025/10/17/08/20251017080016-5U17I1GI.js" defer></script>
 
+  {% block extra_scripts %}{% endblock %}
 </body>
 </html>
