@@ -29,6 +29,9 @@ jobs:
           echo "DEBUG=True" >> .env
           echo "ALLOWED_HOSTS=localhost,127.0.0.1" >> .env
 
+      - name: Collect static files
+        run: python manage.py collectstatic --noinput
+
       - name: Run migrations
         run: python manage.py migrate
 
