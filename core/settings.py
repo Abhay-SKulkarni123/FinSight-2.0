@@ -1,5 +1,5 @@
 import os
-import environ
+import environ # type: ignore
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -69,7 +69,7 @@ WSGI_APPLICATION = "core.wsgi.application"
 # Database — Postgres in production, SQLite in dev
 DATABASE_URL = env('DATABASE_URL', default='')
 if DATABASE_URL:
-    import dj_database_url
+    import dj_database_url # type: ignore
     DATABASES = {'default': dj_database_url.parse(DATABASE_URL)}
 else:
     DATABASES = {
@@ -112,7 +112,15 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -149,7 +157,7 @@ if not DEBUG:
 # Sentry
 SENTRY_DSN = env('SENTRY_DSN', default='')
 if SENTRY_DSN:
-    import sentry_sdk
+    import sentry_sdk # type: ignore
     sentry_sdk.init(dsn=SENTRY_DSN, traces_sample_rate=0.2)
 
 # ML model cache directory
@@ -158,8 +166,6 @@ ML_MODELS_DIR.mkdir(exist_ok=True)
 
 # Rate limiting
 RATELIMIT_USE_CACHE = 'default'
-
-RATELIMIT_VIEW = 'main.views.ratelimit_error_response'
 
 # Logging
 LOGGING = {
