@@ -1,73 +1,47 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ feature.name }} — {{ market_name }} — FinSight{% endblock %}
+{% block meta_description %}Educational resources and official documentation for {{ market_name }}.{% endblock %}
 
 {% block content %}
-<style>
-    :root{
-      --bg:#0d1117;
-      --card:#15181d;
-      --muted:#9aa4ac;
-      --text:#e6eef1;
-      --accent-green:#18ff8f;
-      --accent-orange:#ff9b42;
-      --border:#23272b;
-    }
-    body{background:var(--bg);color:var(--text);padding-top:80px;}
-    .feature-container{max-width:1200px;margin:0 auto;padding:20px;}
-    .feature-header{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;}
-    .feature-header h1{color:var(--accent-orange);margin:0 0 8px 0;font-size:28px;}
-    .resources-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:24px;margin:16px 0 24px;}
-    .resources-grid a{display:block;text-decoration:none;height:100%;}
-    .resource-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;transition:all 0.2s;cursor:pointer;display:flex;flex-direction:column;height:100%;}
-    .resource-card:hover{transform:translateY(-4px);border-color:var(--accent-green);box-shadow:0 10px 30px rgba(24,255,143,0.15);}
-    .resource-card small{color:var(--muted);font-size:12px;margin-bottom:8px;display:block;}
-    .resource-icon{font-size:48px;margin-bottom:12px;}
-    .resource-title{color:var(--accent-green);font-size:20px;font-weight:600;margin-bottom:12px;line-height:1.3;}
-    .resource-desc{color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:12px;}
-    .resource-link{color:var(--accent-orange);text-decoration:none;font-size:14px;font-weight:600;margin-top:auto;display:inline-flex;align-items:center;gap:6px;}
-    .resource-link span{font-size:18px;}
-    .resource-link:hover{text-decoration:underline;}
-    .category-section{margin-bottom:62px;padding-bottom:8px;}
-    .category-section + .category-section{margin-top:32px;border-top:1px solid rgba(255,255,255,0.05);padding-top:32px;}
-    .category-title{color:var(--accent-orange);font-size:22px;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid var(--border);line-height:1.4;letter-spacing:0.4px;}
-    .empty-state{text-align:center;padding:60px 20px;color:var(--muted);background:var(--card);border:1px dashed var(--border);border-radius:12px;}
-</style>
+<div class="page">
 
-<div class="feature-container">
-    <div style="margin-bottom:16px;">
-        <a href="{% url 'market_detail' market %}" style="color:var(--accent-green);text-decoration:none;font-weight:600;">← Back to {{ market_name }}</a>
-    </div>
-    <div class="feature-header">
-        <h1>{{ feature.icon }} {{ feature.name }} - {{ market_name }}</h1>
-        <p>Educational resources and official documentation to help you get started with {{ market_name }} trading</p>
-    </div>
+  <a href="{% url 'market_detail' market %}" style="color:var(--accent); text-decoration:none; font-weight:500; font-size:var(--text-sm); display:inline-flex; align-items:center; gap:4px; margin-bottom:var(--space-4);">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    Back to {{ market_name }}
+  </a>
 
-    {% if resource_sections %}
-        {% for section in resource_sections %}
-        <div class="category-section">
-            <div class="category-title">{{ section.category }}</div>
-            <div class="resources-grid">
-                {% for resource in section.items %}
-                <a href="{{ resource.url }}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">
-                    <div class="resource-card" aria-label="{{ resource.title }} - opens official document in new tab">
-                        <small>{{ resource.category }}</small>
-                        <div class="resource-title">{{ resource.title }}</div>
-                        <div class="resource-desc">{{ resource.description }}</div>
-                        <div class="resource-link">
-                            Visit official source <span>↗</span>
-                        </div>
-                    </div>
-                </a>
-                {% endfor %}
-            </div>
-        </div>
+  <section class="card" style="margin-bottom: var(--space-6);">
+    <h1 class="display" style="color:var(--accent); margin:0 0 var(--space-1); font-size:var(--text-2xl);">{{ feature.name }} — {{ market_name }}</h1>
+    <p style="color:var(--muted); margin:0; font-size:var(--text-sm);">Educational resources and official documentation to help you get started with {{ market_name }} trading.</p>
+  </section>
+
+  {% if resource_sections %}
+    {% for section in resource_sections %}
+    <section style="margin-bottom: var(--space-8);">
+      <h2 class="display" style="color:var(--accent); font-size:var(--text-lg); margin: 0 0 var(--space-4); padding-bottom:var(--space-3); border-bottom:1px solid var(--border);">{{ section.category }}</h2>
+      <div class="grid-3" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+        {% for resource in section.items %}
+        <a href="{{ resource.url }}" target="_blank" rel="noopener noreferrer" class="card fade-in" style="text-decoration:none; display:flex; flex-direction:column; height:100%; transition: transform var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease);" onmouseover="this.style.borderColor='var(--accent)'; this.style.transform='translateY(-3px)';" onmouseout="this.style.borderColor='var(--border)'; this.style.transform='translateY(0)';" aria-label="{{ resource.title }} — opens official document in new tab">
+          <small style="color:var(--muted); font-size:var(--text-xs); margin-bottom:var(--space-2); display:block;">{{ resource.category }}</small>
+          <div style="color:var(--text); font-size:var(--text-lg); font-weight:600; margin-bottom:var(--space-2); line-height:1.3;">{{ resource.title }}</div>
+          <div style="color:var(--muted); font-size:var(--text-sm); line-height:1.6; margin-bottom:var(--space-3); flex:1;">{{ resource.description }}</div>
+          <div style="color:var(--accent); font-size:var(--text-sm); font-weight:600; margin-top:auto; display:inline-flex; align-items:center; gap:6px;">
+            Visit official source
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M7 17L17 7M7 7h10v10"/></svg>
+          </div>
+        </a>
         {% endfor %}
-    {% else %}
-        <div class="empty-state">
-            <div style="font-size:48px;margin-bottom:12px;">📭</div>
-            <div style="font-size:20px;font-weight:600;margin-bottom:8px;">No curated resources yet</div>
-            <p>Resources for {{ market_name }} will appear here once they are published. Please check back soon.</p>
-        </div>
-    {% endif %}
+      </div>
+    </section>
+    {% endfor %}
+  {% else %}
+    <div class="card" style="text-align:center; padding: var(--space-8) var(--space-5); color:var(--muted); border-style:dashed;">
+      <div style="font-weight:600; font-size:var(--text-lg); margin-bottom:var(--space-2); color:var(--text);">No curated resources yet</div>
+      <p style="margin:0; font-size:var(--text-sm);">Resources for {{ market_name }} will appear here once they are published. Please check back soon.</p>
+    </div>
+  {% endif %}
+
 </div>
 {% endblock %}
-

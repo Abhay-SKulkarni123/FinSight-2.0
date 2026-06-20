@@ -4,7 +4,7 @@ All business logic lives here. Views are thin controllers only.
 """
 import logging
 from django.core.cache import cache
-from .ml_models import PricePredictor, RiskAnalyzer, PortfolioOptimizer, clean_ticker
+from .ml_models import PricePredictor, RiskAnalyzer, PortfolioOptimizer, clean_ticker, is_indian_ticker
 
 logger = logging.getLogger('main')
 
@@ -13,9 +13,24 @@ CACHE_TTL_RISK = 600       # 10 minutes
 CACHE_TTL_SCREENER = 180   # 3 minutes
 
 
+def resolve_ticker_for_market(ticker: str, market_type: str) -> str:
+    """
+    Strip exchange prefix and append .NS for Indian market tickers
+    (unless it's already an index or already suffixed).
+    """
+    clean = ticker.split(":")[-1] if ":" in ticker else ticker
+    if market_type == 'indian_markets':
+        if not is_indian_ticker(clean) and clean.upper() not in (
+            'NIFTY', 'NIFTY50', 'SENSEX', 'NIFTYBANK', 'BANKNIFTY'
+        ):
+            clean = f"{clean}.NS"
+    return clean
+
+
 def get_prediction(ticker: str, days_ahead: int, market_type: str = ''):
+    resolved_ticker = resolve_ticker_for_market(ticker, market_type)
     predictor = PricePredictor()
-    current, predicted, confidence = predictor.predict(ticker, days_ahead)
+    current, predicted, confidence = predictor.predict(resolved_ticker, days_ahead)
     if current is None:
         return None
     result = {
@@ -27,30 +42,34 @@ def get_prediction(ticker: str, days_ahead: int, market_type: str = ''):
         'confidence': confidence,
         'metrics': predictor.metrics,
     }
-    # Persist metrics to DB (non-blocking)
-    try:
-        from .models import ModelMetrics
-        ModelMetrics.objects.update_or_create(
-            ticker=clean_ticker(ticker),
-            defaults={
-                'market_type': market_type,
-                'rmse': predictor.metrics.get('rmse', 0),
-                'mae': predictor.metrics.get('mae', 0),
-                'r2_score': predictor.metrics.get('r2', 0),
-                'training_samples': predictor.metrics.get('samples', 0),
-            }
-        )
-    except Exception as e:
-        logger.warning(f"Could not save ModelMetrics: {e}")
+    # Persist metrics to DB as a NEW history row — only when the model was
+    # actually freshly trained this call (predictor.metrics is only populated
+    # by train(), not by a cache-hit load), so repeated predictions against an
+    # already-cached model don't spam duplicate rows with identical numbers.
+    if predictor.metrics:
+        try:
+            from .models import ModelMetrics
+            ModelMetrics.objects.create(
+                ticker=clean_ticker(resolved_ticker),
+                market_type=market_type,
+                horizon_days=predictor.metrics.get('horizon_days', days_ahead),
+                rmse=predictor.metrics.get('rmse', 0),
+                mae=predictor.metrics.get('mae', 0),
+                r2_score=predictor.metrics.get('r2', 0),
+                training_samples=predictor.metrics.get('samples', 0),
+            )
+        except Exception as e:
+            logger.warning(f"Could not save ModelMetrics: {e}")
     return result
 
 
-def get_risk_analysis(ticker: str, period: str = '1y'):
-    cache_key = f"risk:{ticker}:{period}"
+def get_risk_analysis(ticker: str, market_type: str = '', period: str = '1y'):
+    resolved_ticker = resolve_ticker_for_market(ticker, market_type)
+    cache_key = f"risk:{resolved_ticker}:{period}"
     cached = cache.get(cache_key)
     if cached:
         return cached
-    result = RiskAnalyzer().calculate_risk_metrics(ticker, period)
+    result = RiskAnalyzer().calculate_risk_metrics(resolved_ticker, period)
     if result:
         cache.set(cache_key, result, CACHE_TTL_RISK)
     return result
@@ -166,3 +185,61 @@ def get_market_analysis(market: str, tickers: list):
     }
     cache.set(cache_key, result, CACHE_TTL_ANALYSIS)
     return result
+
+
+def get_model_health(limit_per_ticker: int = 30):
+    """
+    Aggregate ModelMetrics history into a dashboard-ready summary:
+    per-ticker latest accuracy plus a trend series for charting.
+    Honest by construction — if a ticker has only ever been trained once,
+    its "trend" is a single point, and the dashboard should say so rather
+    than imply a history that doesn't exist.
+    """
+    from .models import ModelMetrics
+
+    # NOTE: ModelMetrics.Meta.ordering = ['-trained_at'] by default, which
+    # breaks .distinct() at the SQL level when the ordering column isn't in
+    # the SELECT (a classic Django gotcha — ORDER BY columns leak into
+    # DISTINCT). Using .order_by() explicitly here resets that.
+    tickers = (ModelMetrics.objects
+               .order_by('ticker')
+               .values_list('ticker', flat=True)
+               .distinct())
+
+    summary = []
+    for ticker in tickers:
+        rows = list(
+            ModelMetrics.objects.filter(ticker=ticker)
+            .order_by('-trained_at')[:limit_per_ticker]
+        )
+        if not rows:
+            continue
+        rows = list(reversed(rows))  # chronological for charting
+        latest = rows[-1]
+        summary.append({
+            'ticker': ticker,
+            'market_type': latest.market_type,
+            'horizon_days': latest.horizon_days,
+            'latest_rmse': round(latest.rmse, 4),
+            'latest_mae': round(latest.mae, 4),
+            'latest_r2': round(latest.r2_score, 4),
+            'training_samples': latest.training_samples,
+            'last_trained': latest.trained_at.isoformat(),
+            'retrain_count': len(rows),
+            'history': [
+                {
+                    'trained_at': r.trained_at.isoformat(),
+                    'rmse': round(r.rmse, 4),
+                    'mae': round(r.mae, 4),
+                    'r2': round(r.r2_score, 4),
+                }
+                for r in rows
+            ],
+        })
+
+    summary.sort(key=lambda s: s['last_trained'], reverse=True)
+    return {
+        'tickers': summary,
+        'total_tracked': len(summary),
+        'total_retrains': sum(s['retrain_count'] for s in summary),
+    }

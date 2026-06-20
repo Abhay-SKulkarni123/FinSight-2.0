@@ -14,4 +14,6 @@ urlpatterns = [
     path('api/screener/', views.screener_api, name='screener_api'),
     path('api/comparison/', views.comparison_api, name='comparison_api'),
     path('api/tickers/', views.ticker_search_api, name='ticker_search_api'),
+    path('model-health/', views.model_health_page, name='model_health'),
+    path('how-it-works/', views.how_it_works_page, name='how_it_works'),
 ]

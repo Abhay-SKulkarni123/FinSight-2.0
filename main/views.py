@@ -1184,3 +1184,13 @@ def market_analysis_api(request, market):
         return JsonResponse({'error': 'Unable to fetch market analysis right now.'}, status=503)
 
     return JsonResponse({'success': True, 'market': market, 'analysis': analysis})
+
+@require_http_methods(["GET"])
+def model_health_page(request):
+    """Server-rendered dashboard showing real ModelMetrics history per ticker."""
+    health = services.get_model_health()
+    return render(request, "model_health.html", {"health": health})
+
+@require_http_methods(["GET"])
+def how_it_works_page(request):
+    return render(request, "how_it_works.html", {})

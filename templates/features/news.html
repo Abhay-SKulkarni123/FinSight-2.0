@@ -1,79 +1,64 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ feature.name }} — {{ market_name }} — FinSight{% endblock %}
+{% block meta_description %}Latest trending news and market updates for {{ market_name }}.{% endblock %}
 
 {% block content %}
-<style>
-    :root{
-      --bg:#0d1117;
-      --card:#15181d;
-      --muted:#9aa4ac;
-      --text:#e6eef1;
-      --accent-green:#18ff8f;
-      --accent-orange:#ff9b42;
-      --border:#23272b;
-    }
-    body{background:var(--bg);color:var(--text);padding-top:80px;}
-    .feature-container{max-width:1200px;margin:0 auto;padding:20px;}
-    .feature-header{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;}
-    .feature-header h1{color:var(--accent-orange);margin:0 0 8px 0;font-size:28px;}
-    .news-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;margin-top:24px;}
-    .news-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;transition:all 0.2s;cursor:pointer;display:flex;flex-direction:column;height:100%;text-decoration:none;color:inherit;}
-    .news-card:hover{transform:translateY(-4px);border-color:var(--accent-green);box-shadow:0 12px 30px rgba(24,255,143,0.15);}
-    .news-title{color:var(--text);font-weight:600;margin:0 0 12px 0;font-size:18px;line-height:1.4;}
-    .news-excerpt{color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:16px;flex:1;}
-    .news-meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);flex-wrap:wrap;gap:8px;}
-    .filter-bar{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:24px;display:flex;gap:12px;flex-wrap:wrap;}
-    .filter-btn{padding:8px 16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;transition:all 0.2s;}
-    .filter-btn.active{background:var(--accent-green);color:#000;border-color:var(--accent-green);}
-    .badge{background:rgba(24,255,143,0.12);color:var(--accent-green);padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;}
-    .skeleton{border-radius:12px;background:linear-gradient(90deg,var(--card) 25%,var(--border) 50%,var(--card) 75%);background-size:200% 100%;animation:loading 1.5s ease-in-out infinite;height:180px;}
-    @keyframes loading{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
-    .empty-state{text-align:center;color:var(--muted);padding:40px 20px;}
-    .news-refresh-bar{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;}
-    .news-refresh-bar small{color:var(--muted);}
-    .refresh-btn{background:var(--accent-green);color:#000;border:none;border-radius:999px;padding:10px 16px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:opacity 0.2s;}
-    .refresh-btn.is-loading{opacity:0.6;pointer-events:none;}
-    .live-pill{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--accent-orange);}
-    .live-dot{width:8px;height:8px;border-radius:999px;background:var(--accent-orange);animation:pulse 1.4s ease-in-out infinite;}
-    @keyframes pulse{0%{opacity:0.2;transform:scale(0.7);}50%{opacity:1;transform:scale(1);}100%{opacity:0.2;transform:scale(0.7);}}
-</style>
+<div class="page">
 
-<div class="feature-container">
-    <div style="margin-bottom:16px;">
-        <a href="{% url 'market_detail' market %}" style="color:var(--accent-green);text-decoration:none;font-weight:600;">← Back to {{ market_name }}</a>
-    </div>
-    <div class="feature-header">
-        <h1>{{ feature.icon }} {{ feature.name }} - {{ market_name }}</h1>
-        <p>Latest trending news and market updates for {{ market_name }}</p>
-    </div>
+  <a href="{% url 'market_detail' market %}" style="color:var(--accent); text-decoration:none; font-weight:500; font-size:var(--text-sm); display:inline-flex; align-items:center; gap:4px; margin-bottom:var(--space-4);">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    Back to {{ market_name }}
+  </a>
 
-    <div class="filter-bar">
-        <button class="filter-btn active" data-filter="all">All News</button>
-        <button class="filter-btn" data-filter="breaking">Breaking</button>
-        <button class="filter-btn" data-filter="analysis">Analysis</button>
-        <button class="filter-btn" data-filter="earnings">Earnings</button>
-        {% for ticker in tickers|slice:":5" %}
-        <button class="filter-btn" data-filter="{{ ticker }}">{{ ticker|slice:":10" }}</button>
-        {% endfor %}
-    </div>
+  <section class="card" style="margin-bottom: var(--space-5);">
+    <h1 class="display" style="color:var(--accent); margin:0 0 var(--space-1); font-size:var(--text-2xl);">{{ feature.name }} — {{ market_name }}</h1>
+    <p style="color:var(--muted); margin:0; font-size:var(--text-sm);">Latest trending news and market updates for {{ market_name }}.</p>
+  </section>
 
-    <div class="news-refresh-bar" role="status" aria-live="polite">
-        <div>
-            <div class="live-pill"><span class="live-dot"></span>Live via Inshorts desk</div>
-            <small id="lastUpdatedLabel">Waiting for first update…</small>
-        </div>
-        <button id="refreshNewsBtn" class="refresh-btn" type="button">⟳ Refresh feed</button>
-    </div>
+  <div class="card" style="margin-bottom: var(--space-4); display:flex; gap:var(--space-2); flex-wrap:wrap;" id="filterBar">
+    <button class="btn btn-secondary filter-btn active" data-filter="all" type="button">All news</button>
+    <button class="btn btn-secondary filter-btn" data-filter="breaking" type="button">Breaking</button>
+    <button class="btn btn-secondary filter-btn" data-filter="analysis" type="button">Analysis</button>
+    <button class="btn btn-secondary filter-btn" data-filter="earnings" type="button">Earnings</button>
+    {% for ticker in tickers|slice:":5" %}
+    <button class="btn btn-secondary filter-btn" data-filter="{{ ticker }}" type="button">{{ ticker|slice:":10" }}</button>
+    {% endfor %}
+  </div>
 
-    <div class="news-grid" id="newsGrid" aria-live="polite"></div>
-    <div id="newsEmpty" class="empty-state" style="display:none;">
-        <div style="font-size:48px;margin-bottom:12px;">📰</div>
-        <div style="font-size:20px;font-weight:600;margin-bottom:8px;">No articles available</div>
-        <p>We couldn't find fresh stories for {{ market_name }} right now. Try again in a moment.</p>
+  <div class="card" role="status" aria-live="polite" style="margin-bottom: var(--space-4); display:flex; justify-content:space-between; align-items:center; gap:var(--space-4); flex-wrap:wrap;">
+    <div>
+      <div style="display:inline-flex; align-items:center; gap:6px; font-size:var(--text-sm); font-weight:600; color:var(--accent);">
+        <span style="width:8px; height:8px; border-radius:50%; background:var(--accent); display:inline-block; animation: pulseDot 1.4s ease-in-out infinite;"></span>
+        Live via Inshorts desk
+      </div>
+      <div id="lastUpdatedLabel" style="color:var(--muted); font-size:var(--text-xs); margin-top:2px;">Waiting for first update…</div>
     </div>
+    <button id="refreshNewsBtn" class="btn btn-primary" type="button">Refresh feed</button>
+  </div>
+
+  <div class="grid-3" id="newsGrid" aria-live="polite" style="grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));"></div>
+
+  <div id="newsEmpty" class="card" style="display:none; text-align:center; padding: var(--space-8) var(--space-5); color:var(--muted);">
+    <div style="font-weight:600; margin-bottom:4px; color:var(--text);">No articles available</div>
+    <p style="margin:0; font-size:var(--text-sm);">We couldn't find fresh stories for {{ market_name }} right now. Try again in a moment.</p>
+  </div>
 </div>
 
 {{ tickers|json_script:"market-tickers" }}
+{% endblock %}
 
+{% block extra_head %}
+<style>
+@keyframes pulseDot { 0% { opacity:0.2; transform:scale(0.7); } 50% { opacity:1; transform:scale(1); } 100% { opacity:0.2; transform:scale(0.7); } }
+.filter-btn.active { background: var(--accent); color: #1B1304; border-color: var(--accent); }
+.news-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:var(--space-4); display:flex; flex-direction:column; height:100%; text-decoration:none; color:inherit; transition: transform var(--duration-fast) var(--ease), border-color var(--duration-fast) var(--ease); }
+.news-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
 <script>
 const marketSlug = "{{ market }}";
 const filterButtons = document.querySelectorAll('.filter-btn');
@@ -86,151 +71,146 @@ const marketTickers = tickersScript ? JSON.parse(tickersScript.textContent) : []
 let articles = [];
 let currentFilter = 'all';
 let refreshTimer = null;
-const REFRESH_INTERVAL = 180000; // 3 minutes
+const REFRESH_INTERVAL = 180000;
+
+function el(tag, props, children) {
+  const node = document.createElement(tag);
+  Object.entries(props || {}).forEach(([k, v]) => {
+    if (k === 'style') node.style.cssText = v;
+    else if (k === 'class') node.className = v;
+    else node.setAttribute(k, v);
+  });
+  (children || []).forEach(c => {
+    if (typeof c === 'string') node.appendChild(document.createTextNode(c));
+    else if (c) node.appendChild(c);
+  });
+  return node;
+}
 
 function setLoadingState() {
-    newsGrid.innerHTML = '';
-    emptyState.style.display = 'none';
-    for (let i = 0; i < 6; i++) {
-        const skeleton = document.createElement('div');
-        skeleton.className = 'skeleton';
-        newsGrid.appendChild(skeleton);
-    }
+  newsGrid.innerHTML = '';
+  emptyState.style.display = 'none';
+  for (let i = 0; i < 6; i++) {
+    newsGrid.appendChild(el('div', { class: 'skeleton', style: 'height:180px;' }));
+  }
 }
 
 function formatTimeAgo(dateString) {
-    if (!dateString) return 'Just now';
-    const publishedDate = new Date(dateString);
-    const diffMs = Date.now() - publishedDate.getTime();
-    const minutes = Math.floor(diffMs / 60000);
-    if (minutes < 60) return `${minutes || 1} min ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours} hr${hours > 1 ? 's' : ''} ago`;
-    const days = Math.floor(hours / 24);
-    return `${days} day${days > 1 ? 's' : ''} ago`;
+  if (!dateString) return 'Just now';
+  const publishedDate = new Date(dateString);
+  const diffMs = Date.now() - publishedDate.getTime();
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 60) return `${minutes || 1} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hr${hours > 1 ? 's' : ''} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days > 1 ? 's' : ''} ago`;
 }
 
 function articleMatchesFilter(article, filter) {
-    if (filter === 'all') return true;
-    const type = (article.type || '').toLowerCase();
-    if (['breaking', 'analysis', 'earnings'].includes(filter)) {
-        return type.includes(filter);
-    }
-    // otherwise treat as ticker filter
-    const related = article.related_tickers || [];
-    const normalizedFilter = (filter.includes(':') ? filter.split(':').pop() : filter).toUpperCase();
-    return related.some(ticker => ticker && ticker.toUpperCase().includes(normalizedFilter));
+  if (filter === 'all') return true;
+  const type = (article.type || '').toLowerCase();
+  if (['breaking', 'analysis', 'earnings'].includes(filter)) {
+    return type.includes(filter);
+  }
+  const related = article.related_tickers || [];
+  const normalizedFilter = (filter.includes(':') ? filter.split(':').pop() : filter).toUpperCase();
+  return related.some(ticker => ticker && ticker.toUpperCase().includes(normalizedFilter));
+}
+
+function buildArticleCard(article) {
+  const link = el('a', { class: 'news-card fade-in', href: article.link, target: '_blank', rel: 'noopener noreferrer' });
+
+  const topRow = el('div', { style: 'display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-3); gap:10px; flex-wrap:wrap;' });
+  topRow.appendChild(el('span', { class: 'coach-badge watch' }, [(article.type || 'general').toUpperCase()]));
+  topRow.appendChild(el('span', { style: 'font-size:var(--text-xs); color:var(--muted);' }, [article.publisher || 'Inshorts']));
+  link.appendChild(topRow);
+
+  link.appendChild(el('div', { style: 'font-weight:600; margin-bottom:var(--space-2); font-size:var(--text-base); line-height:1.4;' }, [article.title || 'Untitled story']));
+  link.appendChild(el('div', { style: 'color:var(--muted); font-size:var(--text-sm); line-height:1.6; margin-bottom:var(--space-3); flex:1;' }, [article.summary || 'Tap to read the full story on the publisher website.']));
+
+  const metaRow = el('div', { style: 'display:flex; justify-content:space-between; font-size:var(--text-xs); color:var(--muted); flex-wrap:wrap; gap:8px;' });
+  metaRow.appendChild(el('span', {}, [formatTimeAgo(article.published_at)]));
+  metaRow.appendChild(el('span', {}, [(article.related_tickers || []).slice(0, 3).join(', ') || marketTickers[0] || '']));
+  link.appendChild(metaRow);
+
+  return link;
 }
 
 function renderArticles(filter = 'all') {
-    currentFilter = filter;
-    newsGrid.innerHTML = '';
-    const filtered = articles.filter(article => articleMatchesFilter(article, filter));
+  currentFilter = filter;
+  newsGrid.innerHTML = '';
+  const filtered = articles.filter(article => articleMatchesFilter(article, filter));
 
-    if (!filtered.length) {
-        emptyState.style.display = 'block';
-        return;
-    }
-    emptyState.style.display = 'none';
-
-    filtered.forEach(article => {
-        const link = document.createElement('a');
-        link.className = 'news-card fade-in';
-        link.href = article.link;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        link.innerHTML = `
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:10px;flex-wrap:wrap;">
-                <div class="badge">${(article.type || 'general').toUpperCase()}</div>
-                <span style="font-size:12px;color:var(--muted);">${article.publisher || 'Inshorts'}</span>
-            </div>
-            <div class="news-title">${article.title}</div>
-            <div class="news-excerpt">${article.summary || 'Tap to read the full story on the publisher website.'}</div>
-            <div class="news-meta">
-                <span>${formatTimeAgo(article.published_at)}</span>
-                <span>${(article.related_tickers || []).slice(0,3).join(', ') || marketTickers[0] || ''}</span>
-            </div>
-        `;
-        newsGrid.appendChild(link);
-    });
+  if (!filtered.length) {
+    emptyState.style.display = 'block';
+    return;
+  }
+  emptyState.style.display = 'none';
+  filtered.forEach(article => newsGrid.appendChild(buildArticleCard(article)));
 }
 
 function setRefreshingState(isLoading) {
-    if (!refreshBtn) return;
-    refreshBtn.classList.toggle('is-loading', isLoading);
-    refreshBtn.disabled = isLoading;
-    refreshBtn.textContent = isLoading ? 'Refreshing…' : '⟳ Refresh feed';
+  if (!refreshBtn) return;
+  refreshBtn.disabled = isLoading;
+  refreshBtn.style.opacity = isLoading ? '0.6' : '1';
+  refreshBtn.textContent = isLoading ? 'Refreshing…' : 'Refresh feed';
 }
 
 function updateLastUpdated() {
-    if (!lastUpdatedLabel) return;
-    const now = new Date();
-    lastUpdatedLabel.textContent = `Last updated ${now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}`;
+  if (!lastUpdatedLabel) return;
+  const now = new Date();
+  lastUpdatedLabel.textContent = `Last updated ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 }
 
 function restartAutoRefresh() {
-    if (refreshTimer) clearInterval(refreshTimer);
-    refreshTimer = setInterval(() => fetchNews(false), REFRESH_INTERVAL);
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(() => fetchNews(false), REFRESH_INTERVAL);
 }
 
 async function fetchNews(isManual = false) {
-    setLoadingState();
-    setRefreshingState(true);
-    try {
-        const response = await fetch(`/api/news/?market=${marketSlug}&t=${Date.now()}`);
-        if (!response.ok) {
-            throw new Error('Failed to load news');
-        }
-        const data = await response.json();
-        if (!data.success) {
-            throw new Error(data.error || 'Unable to load news');
-        }
-        articles = data.articles || [];
-        renderArticles(currentFilter);
-        updateLastUpdated();
-        restartAutoRefresh();
-        if (isManual && window.showToast) {
-            window.showToast('Feed updated', 'Live headlines pulled from Inshorts.', 'success', 3000);
-        }
-    } catch (error) {
-        newsGrid.innerHTML = `
-            <div class="empty-state">
-                <div style="font-size:48px;margin-bottom:12px;">⚠️</div>
-                <div style="font-size:18px;font-weight:600;margin-bottom:8px;">Unable to load news</div>
-                <p>${error.message || 'Please refresh to try again.'}</p>
-            </div>
-        `;
-        emptyState.style.display = 'none';
-        if (isManual && window.showToast) {
-            window.showToast('Refresh failed', error.message || 'Please try again shortly.', 'error', 4000);
-        }
-    } finally {
-        setRefreshingState(false);
+  setLoadingState();
+  setRefreshingState(true);
+  try {
+    const response = await fetch(`/api/news/?market=${marketSlug}&t=${Date.now()}`);
+    if (!response.ok) throw new Error('Failed to load news');
+    const data = await response.json();
+    if (!data.success) throw new Error(data.error || 'Unable to load news');
+    articles = data.articles || [];
+    renderArticles(currentFilter);
+    updateLastUpdated();
+    restartAutoRefresh();
+    if (isManual && window.showToast) {
+      window.showToast('Feed updated', 'Live headlines pulled from Inshorts.', 'success', 3000);
     }
+  } catch (error) {
+    newsGrid.innerHTML = '';
+    const errorCard = el('div', { class: 'card', style: 'grid-column:1/-1; text-align:center; padding:var(--space-6); color:var(--muted);' });
+    errorCard.appendChild(el('div', { style: 'font-weight:600; margin-bottom:4px; color:var(--text);' }, ['Unable to load news']));
+    errorCard.appendChild(el('p', { style: 'margin:0; font-size:var(--text-sm);' }, [error.message || 'Please refresh to try again.']));
+    newsGrid.appendChild(errorCard);
+    emptyState.style.display = 'none';
+    if (isManual && window.showToast) {
+      window.showToast('Refresh failed', error.message || 'Please try again shortly.', 'error', 4000);
+    }
+  } finally {
+    setRefreshingState(false);
+  }
 }
 
 filterButtons.forEach(btn => {
-    btn.addEventListener('click', function() {
-        filterButtons.forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
-        renderArticles(this.dataset.filter || 'all');
-    });
+  btn.addEventListener('click', function () {
+    filterButtons.forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    renderArticles(this.dataset.filter || 'all');
+  });
 });
 
 refreshBtn?.addEventListener('click', () => fetchNews(true));
-
-document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-        fetchNews(false);
-    }
-});
-
+document.addEventListener('visibilitychange', () => { if (!document.hidden) fetchNews(false); });
 window.addEventListener('focus', () => fetchNews(false));
 
-document.addEventListener('DOMContentLoaded', () => {
-    fetchNews(false);
-    restartAutoRefresh();
-});
+fetchNews(false);
+restartAutoRefresh();
 </script>
 {% endblock %}
-

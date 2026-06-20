@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}How the model works — FinSight{% endblock %}
+{% block meta_description %}An honest explanation of how FinSight's prediction model works, what it can and can't do, and why.{% endblock %}
+
+{% block content %}
+<div class="page" style="max-width: 800px;">
+
+  <section class="card" style="margin-bottom: var(--space-5);">
+    <h1 class="display" style="color:var(--accent); margin:0 0 var(--space-2); font-size:var(--text-2xl);">How the prediction model actually works</h1>
+    <p style="color:var(--text-dim); line-height:1.7; margin:0;">
+      Most finance apps either hide their model entirely or oversell it. We'd rather tell you exactly what's happening — including where it falls short — so you can decide how much weight to put on any prediction.
+    </p>
+  </section>
+
+  <section class="card" style="margin-bottom: var(--space-4);">
+    <h2 class="display" style="font-size:var(--text-lg); margin:0 0 var(--space-3);">The short version</h2>
+    <p style="color:var(--text-dim); line-height:1.7; margin:0 0 var(--space-3);">
+      FinSight trains a separate Gradient Boosting model for every ticker and time horizon you ask about. It looks at recent price action, momentum, and volatility indicators, and predicts the most likely <em>percentage return</em> over your selected horizon — not a raw target price pulled from thin air.
+    </p>
+    <p style="color:var(--text-dim); line-height:1.7; margin:0;">
+      That return prediction is then blended with the ticker's own recent trend, and bounded by its historical volatility, so the final number can't swing to an implausible extreme even if the model itself gets confused.
+    </p>
+  </section>
+
+  <section class="card" style="margin-bottom: var(--space-4);">
+    <h2 class="display" style="font-size:var(--text-lg); margin:0 0 var(--space-3);">What goes into a prediction</h2>
+    <div style="display:flex; flex-direction:column; gap:var(--space-2);">
+      <div class="coach-line"><span class="coach-badge watch">Trend</span> 5/10/20/50-day moving averages, expressed relative to the current price</div>
+      <div class="coach-line"><span class="coach-badge watch">Momentum</span> RSI (14-day) and MACD with signal line</div>
+      <div class="coach-line"><span class="coach-badge watch">Volatility</span> Bollinger Bands, recent price range, and rolling standard deviation</div>
+      <div class="coach-line"><span class="coach-badge watch">Volume</span> Current volume relative to its 20-day average</div>
+    </div>
+  </section>
+
+  <section class="card" style="margin-bottom: var(--space-4);">
+    <h2 class="display" style="font-size:var(--text-lg); margin:0 0 var(--space-3);">Why we predict returns, not prices</h2>
+    <p style="color:var(--text-dim); line-height:1.7; margin:0;">
+      An earlier version of this model tried to predict the raw future price directly, then chain several single-day forecasts together for longer horizons. That approach has a fundamental flaw: tree-based models like Gradient Boosting can't reliably extrapolate beyond the price range they were trained on. For any stock in a sustained trend, the "future" is always outside that range — so the model was structurally biased toward reverting to whatever price level it saw most often during training. Predicting the percentage return instead keeps the target roughly stable regardless of a stock's absolute price or trend direction, which is what actually fixes this.
+    </p>
+  </section>
+
+  <section class="card" style="margin-bottom: var(--space-4);">
+    <h2 class="display" style="font-size:var(--text-lg); margin:0 0 var(--space-3);">What this model is genuinely good — and not good — at</h2>
+    <div style="display:flex; flex-direction:column; gap:var(--space-2);">
+      <div class="coach-line"><span class="coach-badge good">Good for</span> Short-to-medium horizon directional context on liquid, established tickers with enough price history to train on</div>
+      <div class="coach-line"><span class="coach-badge good">Good for</span> Combining with the Risk page to sanity-check whether a prediction's confidence is consistent with the stock's actual volatility</div>
+      <div class="coach-line"><span class="coach-badge alert">Not good for</span> Predicting black-swan events, earnings surprises, or anything not reflected in recent price action</div>
+      <div class="coach-line"><span class="coach-badge alert">Not good for</span> Newly listed tickers or anything with under ~1 year of price history — the model needs real data to learn from</div>
+      <div class="coach-line"><span class="coach-badge alert">Not good for</span> Treating as financial advice. It's a statistical pattern-matcher, not a crystal ball.</div>
+    </div>
+  </section>
+
+  <section class="card" style="margin-bottom: var(--space-4);">
+    <h2 class="display" style="font-size:var(--text-lg); margin:0 0 var(--space-3);">How we measure ourselves</h2>
+    <p style="color:var(--text-dim); line-height:1.7; margin:0 0 var(--space-3);">
+      Every time a model retrains, its RMSE, MAE, and R² against a held-out test set get logged — not hidden. You can see the real, unedited numbers for every ticker we've trained on the Model Health page.
+    </p>
+    <a href="{% url 'model_health' %}" class="btn btn-secondary">View live model health →</a>
+  </section>
+
+  <section class="card">
+    <h2 class="display" style="font-size:var(--text-lg); margin:0 0 var(--space-3);">The technical stack, if you're curious</h2>
+    <p style="color:var(--text-dim); line-height:1.7; margin:0;">
+      scikit-learn's <code style="background:var(--bg-raised); padding:1px 6px; border-radius:4px; font-family:var(--font-mono); font-size:0.9em;">GradientBoostingRegressor</code>, 200 estimators, max depth 4, trained per-ticker per-horizon on up to 2 years of daily OHLCV data from Yahoo Finance. Models are cached with joblib so predictions return in well under a second after the first training run for any given ticker.
+    </p>
+  </section>
+
+</div>
+{% endblock %}

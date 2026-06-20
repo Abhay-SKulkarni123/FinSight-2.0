@@ -1,119 +1,91 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ feature.name }} — {{ market_name }} — FinSight{% endblock %}
+{% block meta_description %}Track live P&amp;L, allocation, and portfolio diagnostics for your {{ market_name }} holdings.{% endblock %}
 
 {% block content %}
-<style>
-    :root{
-      --bg:#0d1117;
-      --card:#15181d;
-      --muted:#9aa4ac;
-      --text:#e6eef1;
-      --accent-green:#18ff8f;
-      --accent-orange:#ff9b42;
-      --border:#23272b;
-    }
-    body{background:var(--bg);color:var(--text);padding-top:80px;}
-    .feature-container{max-width:1400px;margin:0 auto;padding:20px;}
-    .feature-header{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;}
-    .feature-header h1{color:var(--accent-orange);margin:0 0 8px 0;font-size:28px;}
-    .form-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;}
-    .holding-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:12px;}
-    .holding-row{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:12px;margin-bottom:12px;}
-    .holding-row input{width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);}
-    .holding-row button{background:none;border:none;color:var(--muted);cursor:pointer;}
-    .btn-primary{background:var(--accent-green);color:#000;border:none;padding:12px 24px;border-radius:8px;font-weight:600;cursor:pointer;}
-    .btn-secondary{background:var(--bg);color:var(--text);border:1px solid var(--border);padding:12px 18px;border-radius:8px;font-weight:600;cursor:pointer;margin-right:12px;}
-    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;}
-    .stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;text-align:center;}
-    .stat-value{font-size:30px;font-weight:700;margin:10px 0;}
-    .chart-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;margin-bottom:24px;}
-    .chart-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;}
-    .chart-card canvas{max-width:100%;height:320px;}
-    .portfolio-table{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;overflow-x:auto;}
-    table{width:100%;border-collapse:collapse;}
-    th,td{padding:12px;text-align:left;border-bottom:1px solid var(--border);}
-    th{color:var(--accent-orange);font-weight:600;}
-    .positive{color:var(--accent-green);}
-    .negative{color:#ff4444;}
-</style>
+<div class="page" style="max-width:1400px;">
 
-<div class="feature-container">
-    <div style="margin-bottom:16px;">
-        <a href="{% url 'market_detail' market %}" style="color:var(--accent-green);text-decoration:none;font-weight:600;">← Back to {{ market_name }}</a>
-    </div>
-    <div class="feature-header">
-        <h1>{{ feature.icon }} {{ feature.name }} - {{ market_name }}</h1>
-        <p>Track live P&L, allocation, and AI-assisted portfolio diagnostics. Add any tickers and we will rebuild the analytics on the fly.</p>
-    </div>
+  <a href="{% url 'market_detail' market %}" style="color:var(--accent); text-decoration:none; font-weight:500; font-size:var(--text-sm); display:inline-flex; align-items:center; gap:4px; margin-bottom:var(--space-4);">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    Back to {{ market_name }}
+  </a>
 
-    <div class="form-card">
-        <h3 style="color:var(--accent-green);margin-top:0;">Holdings</h3>
-        <form id="portfolioForm">
-            {% csrf_token %}
-            <div id="holdingRows"></div>
-            <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;">
-                <button type="button" class="btn-secondary" id="addHoldingBtn">+ Add Ticker</button>
-                <button type="submit" class="btn-primary">Analyze Portfolio</button>
-            </div>
-        </form>
-    </div>
+  <section class="card" style="margin-bottom: var(--space-5);">
+    <h1 class="display" style="color:var(--accent); margin:0 0 var(--space-1); font-size:var(--text-2xl);">{{ feature.name }} — {{ market_name }}</h1>
+    <p style="color:var(--muted); margin:0; font-size:var(--text-sm);">Track live P&amp;L, allocation, and diagnostics. Add any tickers and the analytics rebuild instantly.</p>
+  </section>
 
-    <div id="portfolioSummary" class="stats-grid" style="display:none;">
-        <div class="stat-card">
-            <div style="color:var(--muted);font-size:14px;">Total Value</div>
-            <div class="stat-value" id="summaryValue">$0.00</div>
-        </div>
-        <div class="stat-card">
-            <div style="color:var(--muted);font-size:14px;">Total Cost</div>
-            <div class="stat-value" id="summaryCost">$0.00</div>
-        </div>
-        <div class="stat-card">
-            <div style="color:var(--muted);font-size:14px;">Net P&L</div>
-            <div class="stat-value" id="summaryGain">$0.00</div>
-        </div>
-        <div class="stat-card">
-            <div style="color:var(--muted);font-size:14px;">Return %</div>
-            <div class="stat-value" id="summaryReturn">0%</div>
-        </div>
+  <form id="portfolioForm" class="card" style="margin-bottom: var(--space-5);">
+    {% csrf_token %}
+    <h3 class="display" style="color:var(--text); margin: 0 0 var(--space-3); font-size:var(--text-base);">Holdings</h3>
+    <div id="holdingRows" style="display:flex; flex-direction:column; gap:var(--space-2); margin-bottom:var(--space-3);"></div>
+    <div style="display:flex; flex-wrap:wrap; gap:var(--space-3);">
+      <button type="button" class="btn btn-secondary" id="addHoldingBtn">+ Add ticker</button>
+      <button type="submit" class="btn btn-primary">Analyze portfolio</button>
     </div>
+  </form>
 
-    <div id="portfolioCharts" class="chart-grid" style="display:none;">
-        <div class="chart-card">
-            <div style="color:var(--accent-orange);font-weight:600;margin-bottom:8px;">Portfolio Equity Curve</div>
-            <canvas id="valueChart"></canvas>
-        </div>
-        <div class="chart-card">
-            <div style="color:var(--accent-orange);font-weight:600;margin-bottom:8px;">Allocation Mix</div>
-            <canvas id="allocationChart"></canvas>
-        </div>
-        <div class="chart-card">
-            <div style="color:var(--accent-orange);font-weight:600;margin-bottom:8px;">Rolling Volatility</div>
-            <canvas id="volChart"></canvas>
-        </div>
-        <div class="chart-card">
-            <div style="color:var(--accent-orange);font-weight:600;margin-bottom:8px;">Daily Returns Distribution</div>
-            <canvas id="histChart"></canvas>
-        </div>
+  <div id="portfolioSummary" class="grid-3" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); display:none; margin-bottom: var(--space-5);">
+    <div class="card">
+      <div style="color:var(--muted); font-size:var(--text-xs); margin-bottom:6px;">Total value</div>
+      <div class="mono" id="summaryValue" style="font-size:var(--text-xl); font-weight:600;">$0.00</div>
     </div>
+    <div class="card">
+      <div style="color:var(--muted); font-size:var(--text-xs); margin-bottom:6px;">Total cost</div>
+      <div class="mono" id="summaryCost" style="font-size:var(--text-xl); font-weight:600;">$0.00</div>
+    </div>
+    <div class="card">
+      <div style="color:var(--muted); font-size:var(--text-xs); margin-bottom:6px;">Net P&amp;L</div>
+      <div class="mono" id="summaryGain" style="font-size:var(--text-xl); font-weight:600;">$0.00</div>
+    </div>
+    <div class="card">
+      <div style="color:var(--muted); font-size:var(--text-xs); margin-bottom:6px;">Return</div>
+      <div class="mono" id="summaryReturn" style="font-size:var(--text-xl); font-weight:600;">0%</div>
+    </div>
+  </div>
 
-    <div id="holdingsTableWrapper" class="portfolio-table" style="display:none;">
-        <h3 style="color:var(--accent-orange);margin-top:0;">Position Detail</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Ticker</th>
-                    <th>Quantity</th>
-                    <th>Cost/Share</th>
-                    <th>Current Price</th>
-                    <th>Market Value</th>
-                    <th>P&L</th>
-                    <th>P&L %</th>
-                </tr>
-            </thead>
-            <tbody id="holdingsTableBody"></tbody>
-        </table>
+  <div id="portfolioCharts" class="grid-2" style="display:none; margin-bottom: var(--space-5);">
+    <div class="card">
+      <div style="color:var(--accent); font-weight:600; margin-bottom:var(--space-3); font-size:var(--text-sm);">Portfolio equity curve</div>
+      <canvas id="valueChart" role="img" aria-label="Portfolio value over time"></canvas>
     </div>
+    <div class="card">
+      <div style="color:var(--accent); font-weight:600; margin-bottom:var(--space-3); font-size:var(--text-sm);">Allocation mix</div>
+      <canvas id="allocationChart" role="img" aria-label="Holdings allocation breakdown"></canvas>
+    </div>
+    <div class="card">
+      <div style="color:var(--accent); font-weight:600; margin-bottom:var(--space-3); font-size:var(--text-sm);">Rolling volatility</div>
+      <canvas id="volChart" role="img" aria-label="Rolling volatility over time"></canvas>
+    </div>
+    <div class="card">
+      <div style="color:var(--accent); font-weight:600; margin-bottom:var(--space-3); font-size:var(--text-sm);">Daily returns distribution</div>
+      <canvas id="histChart" role="img" aria-label="Histogram of daily returns"></canvas>
+    </div>
+  </div>
+
+  <div id="holdingsTableWrapper" class="card card-flush" style="display:none;">
+    <div style="padding: var(--space-3) var(--space-4); border-bottom:1px solid var(--border); color:var(--accent); font-weight:600; font-size:var(--text-sm);">Position detail</div>
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:var(--space-3) var(--space-4); text-align:left; color:var(--muted); font-size:var(--text-xs); text-transform:uppercase; letter-spacing:0.04em;">Ticker</th>
+          <th style="padding:var(--space-3) var(--space-4); text-align:left; color:var(--muted); font-size:var(--text-xs); text-transform:uppercase; letter-spacing:0.04em;">Qty</th>
+          <th style="padding:var(--space-3) var(--space-4); text-align:left; color:var(--muted); font-size:var(--text-xs); text-transform:uppercase; letter-spacing:0.04em;">Cost/share</th>
+          <th style="padding:var(--space-3) var(--space-4); text-align:left; color:var(--muted); font-size:var(--text-xs); text-transform:uppercase; letter-spacing:0.04em;">Current price</th>
+          <th style="padding:var(--space-3) var(--space-4); text-align:left; color:var(--muted); font-size:var(--text-xs); text-transform:uppercase; letter-spacing:0.04em;">Market value</th>
+          <th style="padding:var(--space-3) var(--space-4); text-align:left; color:var(--muted); font-size:var(--text-xs); text-transform:uppercase; letter-spacing:0.04em;">P&amp;L</th>
+          <th style="padding:var(--space-3) var(--space-4); text-align:left; color:var(--muted); font-size:var(--text-xs); text-transform:uppercase; letter-spacing:0.04em;">P&amp;L %</th>
+        </tr>
+      </thead>
+      <tbody id="holdingsTableBody"></tbody>
+    </table>
+  </div>
 </div>
+{% endblock %}
 
+{% block extra_scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 const defaultTickers = [{% for ticker in tickers|slice:":3" %}'{{ ticker|slice:":10" }}'{% if not forloop.last %},{% endif %}{% endfor %}];
@@ -127,230 +99,203 @@ const holdingsTableBody = document.getElementById('holdingsTableBody');
 let valueChart, allocationChart, volChart, histChart;
 let rowIndex = 0;
 
-function safeAttachAutocomplete(input) {
-    if (!input) return;
-    if (window.attachTickerAutocomplete) {
-        window.attachTickerAutocomplete(input);
-    } else {
-        document.addEventListener('ticker-helper-ready', () => window.attachTickerAutocomplete && window.attachTickerAutocomplete(input), { once: true });
-    }
+function el(tag, props, children) {
+  const node = document.createElement(tag);
+  Object.entries(props || {}).forEach(([k, v]) => {
+    if (k === 'style') node.style.cssText = v;
+    else if (k === 'class') node.className = v;
+    else node.setAttribute(k, v);
+  });
+  (children || []).forEach(c => {
+    if (typeof c === 'string') node.appendChild(document.createTextNode(c));
+    else if (c) node.appendChild(c);
+  });
+  return node;
 }
 
-function createHoldingRow(prefill = {}) {
-    const rowId = `holding-${rowIndex++}`;
-    const row = document.createElement('div');
-    row.className = 'holding-row';
-    row.innerHTML = `
-        <input type="text" placeholder="Ticker (e.g. AAPL)" data-field="ticker" value="${prefill.ticker || ''}" aria-label="Ticker symbol">
-        <input type="number" step="0.01" placeholder="Quantity" data-field="quantity" value="${prefill.quantity || 1}" aria-label="Quantity">
-        <input type="number" step="0.01" placeholder="Cost/Share (optional)" data-field="cost" value="${prefill.cost || ''}" aria-label="Cost basis per share">
-        <button type="button" aria-label="Remove holding" data-remove="true">✕</button>
-    `;
-    row.querySelector('[data-remove]').addEventListener('click', () => row.remove());
-    holdingRows.appendChild(row);
-    safeAttachAutocomplete(row.querySelector('[data-field="ticker"]'));
+function safeAttachAutocomplete(input) {
+  if (!input) return;
+  if (window.attachTickerAutocomplete) {
+    window.attachTickerAutocomplete(input);
+  } else {
+    document.addEventListener('ticker-helper-ready', () => window.attachTickerAutocomplete && window.attachTickerAutocomplete(input), { once: true });
+  }
+}
+
+function inputStyle() {
+  return 'width:100%; padding:9px 10px; border-radius:var(--radius-sm); border:1px solid var(--border); background:var(--bg-raised); color:var(--text); font-size:var(--text-sm);';
+}
+
+function createHoldingRow(prefill) {
+  prefill = prefill || {};
+  const row = el('div', { style: 'display:grid; grid-template-columns:2fr 1fr 1fr auto; gap:var(--space-2); align-items:center;' });
+
+  const tickerInput = el('input', { type: 'text', placeholder: 'Ticker (e.g. AAPL)', 'data-field': 'ticker', 'aria-label': 'Ticker symbol', style: inputStyle() });
+  tickerInput.value = prefill.ticker || '';
+
+  const qtyInput = el('input', { type: 'number', step: '0.01', placeholder: 'Quantity', 'data-field': 'quantity', 'aria-label': 'Quantity', style: inputStyle() });
+  qtyInput.value = prefill.quantity || 1;
+
+  const costInput = el('input', { type: 'number', step: '0.01', placeholder: 'Cost/share (optional)', 'data-field': 'cost', 'aria-label': 'Cost basis per share', style: inputStyle() });
+  costInput.value = prefill.cost || '';
+
+  const removeBtn = el('button', { type: 'button', 'aria-label': 'Remove holding', class: 'btn-icon', style: 'width:32px; height:32px;' });
+  removeBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  removeBtn.addEventListener('click', () => row.remove());
+
+  row.appendChild(tickerInput);
+  row.appendChild(qtyInput);
+  row.appendChild(costInput);
+  row.appendChild(removeBtn);
+  holdingRows.appendChild(row);
+  safeAttachAutocomplete(tickerInput);
 }
 
 function bootstrapRows() {
-    if (!defaultTickers.length) {
-        createHoldingRow();
-        return;
-    }
-    defaultTickers.forEach((ticker, idx) => {
-        createHoldingRow({ ticker, quantity: idx === 0 ? 10 : 5 });
-    });
+  if (!defaultTickers.length) {
+    createHoldingRow();
+    return;
+  }
+  defaultTickers.forEach((ticker, idx) => {
+    createHoldingRow({ ticker, quantity: idx === 0 ? 10 : 5 });
+  });
 }
 
 addHoldingBtn.addEventListener('click', () => createHoldingRow());
 bootstrapRows();
 
 function collectHoldings() {
-    const rows = holdingRows.querySelectorAll('.holding-row');
-    const payload = [];
-    rows.forEach(row => {
-        const ticker = row.querySelector('[data-field="ticker"]').value.trim();
-        const quantity = parseFloat(row.querySelector('[data-field="quantity"]').value);
-        const cost = parseFloat(row.querySelector('[data-field="cost"]').value);
-        if (ticker && quantity > 0) {
-            payload.push({
-                ticker,
-                quantity,
-                cost_basis: isNaN(cost) ? null : cost
-            });
-        }
-    });
-    return payload;
+  const rows = holdingRows.querySelectorAll('[data-field="ticker"]');
+  const payload = [];
+  rows.forEach(tickerEl => {
+    const row = tickerEl.parentElement;
+    const ticker = tickerEl.value.trim();
+    const quantity = parseFloat(row.querySelector('[data-field="quantity"]').value);
+    const cost = parseFloat(row.querySelector('[data-field="cost"]').value);
+    if (ticker && quantity > 0) {
+      payload.push({ ticker, quantity, cost_basis: isNaN(cost) ? null : cost });
+    }
+  });
+  return payload;
 }
 
 function renderSummary(summary) {
-    summaryBox.style.display = 'grid';
-    document.getElementById('summaryValue').textContent = `$${summary.total_value.toLocaleString(undefined, {maximumFractionDigits:2})}`;
-    document.getElementById('summaryCost').textContent = `$${summary.total_cost.toLocaleString(undefined, {maximumFractionDigits:2})}`;
-    document.getElementById('summaryGain').textContent = `${summary.total_gain >= 0 ? '+' : ''}$${summary.total_gain.toLocaleString(undefined, {maximumFractionDigits:2})}`;
-    document.getElementById('summaryGain').className = 'stat-value ' + (summary.total_gain >= 0 ? 'positive' : 'negative');
-    document.getElementById('summaryReturn').textContent = `${summary.total_gain_pct.toFixed(2)}%`;
+  summaryBox.style.display = 'grid';
+  document.getElementById('summaryValue').textContent = `$${summary.total_value.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  document.getElementById('summaryCost').textContent = `$${summary.total_cost.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  const gainEl = document.getElementById('summaryGain');
+  gainEl.textContent = `${summary.total_gain >= 0 ? '+' : ''}$${summary.total_gain.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  gainEl.style.color = summary.total_gain >= 0 ? 'var(--gain)' : 'var(--loss)';
+  document.getElementById('summaryReturn').textContent = `${summary.total_gain_pct.toFixed(2)}%`;
 }
 
 function renderHistoryChart(history) {
-    if (!history || !history.length) return;
-    const ctx = document.getElementById('valueChart').getContext('2d');
-    const labels = history.map(point => point.date);
-    const data = history.map(point => point.value);
-    if (valueChart) valueChart.destroy();
-    valueChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels,
-            datasets: [{
-                label: 'Portfolio Value',
-                data,
-                borderColor: '#18ff8f',
-                backgroundColor: 'rgba(24,255,143,0.15)',
-                tension: 0.25,
-                fill: true
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: {
-                x: { ticks: { color: 'var(--muted)' } },
-                y: { ticks: { color: 'var(--muted)' } }
-            }
-        }
-    });
-    chartsWrapper.style.display = 'grid';
+  if (!history || !history.length) return;
+  const ctx = document.getElementById('valueChart').getContext('2d');
+  if (valueChart) valueChart.destroy();
+  valueChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: history.map(p => p.date),
+      datasets: [{ label: 'Portfolio value', data: history.map(p => p.value), borderColor: '#D4A24C', backgroundColor: 'rgba(212,162,76,0.15)', tension: 0.25, fill: true }],
+    },
+    options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#7A8699' } }, y: { ticks: { color: '#7A8699' } } } },
+  });
+  chartsWrapper.style.display = 'grid';
 }
 
 function renderAllocationChart(distribution) {
-    if (!distribution || !distribution.length) return;
-    const ctx = document.getElementById('allocationChart').getContext('2d');
-    if (allocationChart) allocationChart.destroy();
-    allocationChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: distribution.map(item => item.label),
-            datasets: [{
-                data: distribution.map(item => item.value),
-                backgroundColor: ['#18ff8f','#ff9b42','#57b6fe','#c084fc','#f472b6','#facc15','#38bdf8','#34d399']
-            }]
-        },
-        options: {
-            plugins: { legend: { position: 'bottom', labels: { color: 'var(--muted)' } } }
-        }
-    });
-}
-
-function renderHoldingsTable(holdings) {
-    tableWrapper.style.display = 'block';
-    holdingsTableBody.innerHTML = '';
-    holdings.forEach(item => {
-        const row = document.createElement('tr');
-        const gainClass = item.gain >= 0 ? 'positive' : 'negative';
-        row.innerHTML = `
-            <td><strong>${item.ticker}</strong></td>
-            <td>${item.quantity}</td>
-            <td>$${item.cost_basis.toFixed(2)}</td>
-            <td>$${item.current_price.toFixed(2)}</td>
-            <td>$${item.current_value.toFixed(2)}</td>
-            <td class="${gainClass}">${item.gain >= 0 ? '+' : ''}$${item.gain.toFixed(2)}</td>
-            <td class="${gainClass}">${item.gain_pct >= 0 ? '+' : ''}${item.gain_pct.toFixed(2)}%</td>
-        `;
-        holdingsTableBody.appendChild(row);
-    });
+  if (!distribution || !distribution.length) return;
+  const ctx = document.getElementById('allocationChart').getContext('2d');
+  if (allocationChart) allocationChart.destroy();
+  allocationChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: distribution.map(i => i.label),
+      datasets: [{ data: distribution.map(i => i.value), backgroundColor: ['#D4A24C', '#4A9D78', '#4C7FD4', '#C45A4E', '#8B6FB3', '#3D8C9E', '#B3893D', '#6F9C4A'] }],
+    },
+    options: { plugins: { legend: { position: 'bottom', labels: { color: '#7A8699', font: { size: 11 } } } } },
+  });
 }
 
 function renderVolatilityChart(series) {
-    if (!series || !series.length) return;
-    const ctx = document.getElementById('volChart').getContext('2d');
-    if (volChart) volChart.destroy();
-    volChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: series.map(point => point.date),
-            datasets: [{
-                label: 'Rolling Volatility %',
-                data: series.map(point => point.value),
-                borderColor: '#57b6fe',
-                backgroundColor: 'rgba(87,182,254,0.18)',
-                fill: true,
-                tension: 0.3
-            }]
-        },
-        options: {
-            plugins: { legend: { display: false } },
-            scales: {
-                x: { ticks: { color: 'var(--muted)' } },
-                y: { ticks: { color: 'var(--muted)' } }
-            }
-        }
-    });
+  if (!series || !series.length) return;
+  const ctx = document.getElementById('volChart').getContext('2d');
+  if (volChart) volChart.destroy();
+  volChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: series.map(p => p.date), datasets: [{ label: 'Rolling volatility %', data: series.map(p => p.value), borderColor: '#4C7FD4', backgroundColor: 'rgba(76,127,212,0.15)', fill: true, tension: 0.3 }] },
+    options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#7A8699' } }, y: { ticks: { color: '#7A8699' } } } },
+  });
 }
 
 function renderHistogram(data) {
-    if (!data || !data.length) return;
-    const ctx = document.getElementById('histChart').getContext('2d');
-    if (histChart) histChart.destroy();
-    histChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: data.map(point => point.bucket),
-            datasets: [{
-                label: 'Observations',
-                data: data.map(point => point.count),
-                backgroundColor: '#f472b6'
-            }]
-        },
-        options: {
-            plugins: { legend: { display: false } },
-            scales: {
-                x: { ticks: { color: 'var(--muted)', maxRotation: 60, minRotation: 60 } },
-                y: { ticks: { color: 'var(--muted)' } }
-            }
-        }
-    });
+  if (!data || !data.length) return;
+  const ctx = document.getElementById('histChart').getContext('2d');
+  if (histChart) histChart.destroy();
+  histChart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: data.map(p => p.bucket), datasets: [{ label: 'Observations', data: data.map(p => p.count), backgroundColor: '#8B6FB3' }] },
+    options: { plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#7A8699', maxRotation: 60, minRotation: 60 } }, y: { ticks: { color: '#7A8699' } } } },
+  });
 }
 
-portfolioForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-    const holdings = collectHoldings();
-    if (!holdings.length) {
-        showToast('Validation', 'Add at least one holding to analyze.', 'warning', 3000);
-        return;
-    }
-    const submitBtn = portfolioForm.querySelector('button[type="submit"]');
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="spinner" style="margin-right:8px;"></span>Crunching...';
+function renderHoldingsTable(holdings) {
+  tableWrapper.style.display = 'block';
+  holdingsTableBody.innerHTML = '';
+  holdings.forEach(item => {
+    const isUp = item.gain >= 0;
+    const tr = el('tr', { style: 'border-bottom:1px solid var(--border);' });
+    tr.appendChild(el('td', { class: 'mono', style: 'padding:var(--space-3) var(--space-4); font-weight:600;' }, [item.ticker]));
+    tr.appendChild(el('td', { class: 'mono', style: 'padding:var(--space-3) var(--space-4);' }, [String(item.quantity)]));
+    tr.appendChild(el('td', { class: 'mono', style: 'padding:var(--space-3) var(--space-4);' }, [`$${item.cost_basis.toFixed(2)}`]));
+    tr.appendChild(el('td', { class: 'mono', style: 'padding:var(--space-3) var(--space-4);' }, [`$${item.current_price.toFixed(2)}`]));
+    tr.appendChild(el('td', { class: 'mono', style: 'padding:var(--space-3) var(--space-4);' }, [`$${item.current_value.toFixed(2)}`]));
+    const gainCell = el('td', { class: 'mono', style: `padding:var(--space-3) var(--space-4); color:${isUp ? 'var(--gain)' : 'var(--loss)'};` }, [`${isUp ? '+' : ''}$${item.gain.toFixed(2)}`]);
+    tr.appendChild(gainCell);
+    const gainPctCell = el('td', { class: 'mono', style: `padding:var(--space-3) var(--space-4); color:${isUp ? 'var(--gain)' : 'var(--loss)'};` }, [`${item.gain_pct >= 0 ? '+' : ''}${item.gain_pct.toFixed(2)}%`]);
+    tr.appendChild(gainPctCell);
+    holdingsTableBody.appendChild(tr);
+  });
+}
 
-    fetch('/api/portfolio/snapshot/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
-        },
-        body: JSON.stringify({ holdings })
-    })
+portfolioForm.addEventListener('submit', function (e) {
+  e.preventDefault();
+  const holdings = collectHoldings();
+  if (!holdings.length) {
+    showToast('Validation', 'Add at least one holding to analyze.', 'warning', 3000);
+    return;
+  }
+  const submitBtn = portfolioForm.querySelector('button[type="submit"]');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Crunching…';
+
+  fetch('/api/portfolio/snapshot/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '' },
+    body: JSON.stringify({ holdings }),
+  })
     .then(res => res.json())
     .then(payload => {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Analyze Portfolio';
-        if (!payload.success) {
-            showToast('Portfolio', payload.error || 'Unable to analyze portfolio', 'error', 4000);
-            return;
-        }
-        renderSummary(payload.summary);
-        renderHistoryChart(payload.history);
-        renderAllocationChart(payload.distribution);
-        renderVolatilityChart(payload.volatility_series || []);
-        renderHistogram(payload.returns_histogram || []);
-        renderHoldingsTable(payload.holdings);
-        chartsWrapper.style.display = 'grid';
-        showToast('Portfolio updated', 'Live metrics refreshed successfully.', 'success', 2500);
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Analyze portfolio';
+      if (!payload.success) {
+        showToast('Portfolio', payload.error || 'Unable to analyze portfolio', 'error', 4000);
+        return;
+      }
+      renderSummary(payload.summary);
+      renderHistoryChart(payload.history);
+      renderAllocationChart(payload.distribution);
+      renderVolatilityChart(payload.volatility_series || []);
+      renderHistogram(payload.returns_histogram || []);
+      renderHoldingsTable(payload.holdings);
+      chartsWrapper.style.display = 'grid';
+      showToast('Portfolio updated', 'Live metrics refreshed successfully.', 'success', 2500);
     })
     .catch(err => {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Analyze Portfolio';
-        showToast('Network', err.message || 'Unable to connect to analytics service.', 'error', 4000);
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Analyze portfolio';
+      showToast('Network', err.message || 'Unable to connect to analytics service.', 'error', 4000);
     });
 });
 

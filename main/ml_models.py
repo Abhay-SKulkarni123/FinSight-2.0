@@ -1,6 +1,6 @@
 """
 FinSight ML Models — Production Grade
-- PricePredictor: GBM with joblib serialization
+- PricePredictor: GBM with joblib serialization, return-based multi-horizon prediction
 - RiskAnalyzer: Full risk metrics suite
 - PortfolioOptimizer: Real mean-variance optimization via scipy
 """
@@ -83,14 +83,29 @@ class PricePredictor:
     GBM price predictor with:
     - joblib model serialization (train once, predict fast)
     - RMSE / MAE / R2 tracking
-    - Iterative multi-day roll-forward
+    - Direct N-day-ahead RETURN prediction (not iterative rollforward)
+
+    NOTE ON THE FIX: the original implementation tried to forecast multiple
+    days ahead by feeding each day's raw price prediction back into the
+    model as if it were a normalized input feature. Since the model was
+    trained on standardized (z-scored) features, feeding it raw dollar
+    values pushed it far outside its training distribution on every call,
+    which made predictions structurally biased toward decline regardless
+    of the actual ticker or trend. This version instead trains the model
+    to directly predict the forward RETURN over a given horizon (returns
+    are roughly stationary regardless of price level or trend direction,
+    which is what makes this generalize correctly), then blends that with
+    the ticker's own recent trend as a sanity anchor, and finally clamps
+    the result to a volatility-based plausible range.
     """
 
-    FEATURES = [
-        'Close', 'Volume', 'SMA_5', 'SMA_10', 'SMA_20', 'SMA_50',
-        'RSI', 'MACD', 'MACD_signal', 'BB_upper', 'BB_lower',
+    RETURN_FEATURES = [
+        'Volume', 'SMA_5_rel', 'SMA_10_rel', 'SMA_20_rel', 'SMA_50_rel',
+        'RSI', 'MACD', 'MACD_signal', 'BB_upper_rel', 'BB_lower_rel',
         'Volume_ratio', 'Price_change', 'High_Low_ratio'
     ]
+
+    SUPPORTED_HORIZONS = [1, 7, 30, 90, 180, 365]
 
     def __init__(self):
         self.model = None
@@ -98,30 +113,34 @@ class PricePredictor:
         self.is_trained = False
         self.metrics = {}
 
-    def _model_path(self, ticker: str):
-        safe = ticker.replace('/', '_').replace('-', '_')
-        return ML_CACHE_DIR / f"predictor_{safe}.joblib"
+    @staticmethod
+    def nearest_supported_horizon(days_ahead: int) -> int:
+        return min(PricePredictor.SUPPORTED_HORIZONS, key=lambda h: abs(h - days_ahead))
 
-    def _scaler_path(self, ticker: str):
+    def _model_path(self, ticker: str, horizon_days: int = 1):
         safe = ticker.replace('/', '_').replace('-', '_')
-        return ML_CACHE_DIR / f"scaler_{safe}.joblib"
+        return ML_CACHE_DIR / f"predictor_{safe}_h{horizon_days}.joblib"
 
-    def load_cached(self, ticker: str) -> bool:
-        mp, sp = self._model_path(ticker), self._scaler_path(ticker)
+    def _scaler_path(self, ticker: str, horizon_days: int = 1):
+        safe = ticker.replace('/', '_').replace('-', '_')
+        return ML_CACHE_DIR / f"scaler_{safe}_h{horizon_days}.joblib"
+
+    def load_cached(self, ticker: str, horizon_days: int = 1) -> bool:
+        mp, sp = self._model_path(ticker, horizon_days), self._scaler_path(ticker, horizon_days)
         if mp.exists() and sp.exists():
             try:
                 self.model = joblib.load(mp)
                 self.scaler = joblib.load(sp)
                 self.is_trained = True
-                logger.info(f"Loaded cached model for {ticker}")
+                logger.info(f"Loaded cached model for {ticker} (horizon={horizon_days}d)")
                 return True
             except Exception as e:
-                logger.warning(f"Cache load failed for {ticker}: {e}")
+                logger.warning(f"Cache load failed for {ticker} (horizon={horizon_days}d): {e}")
         return False
 
-    def save_cached(self, ticker: str):
-        joblib.dump(self.model, self._model_path(ticker))
-        joblib.dump(self.scaler, self._scaler_path(ticker))
+    def save_cached(self, ticker: str, horizon_days: int = 1):
+        joblib.dump(self.model, self._model_path(ticker, horizon_days))
+        joblib.dump(self.scaler, self._scaler_path(ticker, horizon_days))
 
     def fetch_data(self, ticker: str, period: str = '2y'):
         try:
@@ -132,7 +151,13 @@ class PricePredictor:
             logger.error(f"Data fetch error for {ticker}: {e}")
             return None
 
-    def build_features(self, data: pd.DataFrame):
+    def build_features(self, data: pd.DataFrame, horizon_days: int = 1):
+        """
+        Build feature matrix X and target y, where y is the FORWARD RETURN
+        `horizon_days` ahead. Price-level features (SMAs, Bollinger Bands)
+        are expressed relative to the current close so the model sees
+        scale-invariant ratios, not raw dollar levels.
+        """
         if data is None or len(data) < 60:
             return None, None
         df = data.copy()
@@ -156,18 +181,33 @@ class PricePredictor:
         df['Volume_ratio'] = df['Volume'] / vol_sma.replace(0, 1)
         df['Price_change'] = df['Close'].pct_change()
         df['High_Low_ratio'] = df['High'] / df['Low'].replace(0, 1)
+
+        df['SMA_5_rel'] = df['SMA_5'] / df['Close'] - 1
+        df['SMA_10_rel'] = df['SMA_10'] / df['Close'] - 1
+        df['SMA_20_rel'] = df['SMA_20'] / df['Close'] - 1
+        df['SMA_50_rel'] = df['SMA_50'] / df['Close'] - 1
+        df['BB_upper_rel'] = df['BB_upper'] / df['Close'] - 1
+        df['BB_lower_rel'] = df['BB_lower'] / df['Close'] - 1
+
         df = df.dropna()
-        if len(df) < 50:
+        if len(df) < 50 + horizon_days:
             return None, None
-        X = df[self.FEATURES].values[:-1]
-        y = df['Close'].values[1:]
+
+        future_close = df['Close'].shift(-horizon_days)
+        forward_return = (future_close / df['Close']) - 1
+
+        df = df.iloc[:-horizon_days]
+        forward_return = forward_return.iloc[:-horizon_days]
+
+        X = df[self.RETURN_FEATURES].values
+        y = forward_return.values
         return X, y
 
-    def train(self, ticker: str) -> dict:
+    def train(self, ticker: str, horizon_days: int = 1) -> dict:
         data = self.fetch_data(ticker)
         if data is None:
             return {}
-        X, y = self.build_features(data)
+        X, y = self.build_features(data, horizon_days=horizon_days)
         if X is None:
             return {}
         X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, shuffle=False)
@@ -185,37 +225,53 @@ class PricePredictor:
             'mae': float(mean_absolute_error(y_te, preds)),
             'r2': float(r2_score(y_te, preds)),
             'samples': len(X_tr),
+            'horizon_days': horizon_days,
         }
-        self.save_cached(ticker)
-        logger.info(f"Trained model for {ticker} — RMSE: {self.metrics['rmse']:.4f}")
+        self.save_cached(ticker, horizon_days)
+        logger.info(f"Trained {horizon_days}d-horizon model for {ticker} — RMSE: {self.metrics['rmse']:.4f}")
         return self.metrics
 
     def predict(self, ticker: str, days_ahead: int = 30):
         clean = clean_ticker(ticker)
-        if not self.load_cached(clean):
-            m = self.train(clean)
+        horizon = self.nearest_supported_horizon(days_ahead)
+
+        if not self.load_cached(clean, horizon):
+            m = self.train(clean, horizon)
             if not m:
                 return None, None, None
 
         data = self.fetch_data(clean)
         if data is None:
             return None, None, None
-        X, _ = self.build_features(data)
+        X, _ = self.build_features(data, horizon_days=horizon)
         if X is None or len(X) == 0:
             return None, None, None
 
         current_price = float(data['Close'].iloc[-1])
         feats = self.scaler.transform(X[-1:])
-        cur = feats[0].copy()
-        for _ in range(days_ahead):
-            pred = float(self.model.predict([cur])[0])
-            cur = cur.copy()
-            cur[0] = pred
-        predicted_price = pred
+        predicted_return = float(self.model.predict(feats)[0])
 
-        rmse = self.metrics.get('rmse', abs(predicted_price - current_price) * 0.1)
-        price_range = max(current_price * 0.001, rmse)
-        confidence = max(55.0, min(92.0, 100 - (price_range / current_price * 100)))
+        # Trend-following baseline: recent annualized drift projected over
+        # the horizon, used as a sanity anchor for the ML return estimate.
+        lookback = min(90, len(data) - 1)
+        recent_returns = data['Close'].pct_change().dropna().tail(lookback)
+        daily_drift = float(recent_returns.mean())
+        daily_vol = float(recent_returns.std()) if len(recent_returns) > 5 else 0.02
+        baseline_return = daily_drift * horizon
+
+        # Trust ML more for short horizons, lean on trend baseline more for
+        # long horizons where return estimates get noisier.
+        ml_weight = max(0.35, 0.75 - (horizon / 400))
+        blended_return = ml_weight * predicted_return + (1 - ml_weight) * baseline_return
+
+        # Volatility-based plausibility band — final sanity check.
+        plausible_move = min(daily_vol * np.sqrt(max(horizon, 1)) * 4, 0.6)
+        blended_return = max(-plausible_move, min(plausible_move, blended_return))
+
+        predicted_price = current_price * (1 + blended_return)
+
+        rmse = self.metrics.get('rmse', abs(blended_return) * current_price * 0.5)
+        confidence = max(55.0, min(90.0, 100 - (daily_vol * np.sqrt(horizon) * 100 * 1.5)))
         return current_price, predicted_price, round(confidence, 1)
 
 
@@ -345,7 +401,6 @@ class PortfolioOptimizer:
                 pct = round(float(weights[i] * 100), 2)
                 allocation[t] = {'percentage': pct, 'amount': round(investment_amount * weights[i], 2)}
 
-            # Efficient frontier (20 points)
             frontier = []
             if SCIPY_AVAILABLE:
                 target_returns = np.linspace(mu.min(), mu.max(), 20)

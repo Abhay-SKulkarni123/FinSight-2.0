@@ -1,210 +1,154 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ feature.name }} — {{ market_name }} — FinSight{% endblock %}
+{% block meta_description %}Advanced price, volume, and technical indicator charts for {{ market_name }} tickers.{% endblock %}
 
 {% block content %}
-<style>
-    :root{
-      --bg:#0d1117;
-      --card:#15181d;
-      --muted:#9aa4ac;
-      --text:#e6eef1;
-      --accent-green:#18ff8f;
-      --accent-orange:#ff9b42;
-      --border:#23272b;
-    }
-    body{background:var(--bg);color:var(--text);padding-top:80px;}
-    .feature-container{max-width:1400px;margin:0 auto;padding:20px;}
-    .feature-header{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;}
-    .feature-header h1{color:var(--accent-orange);margin:0 0 8px 0;font-size:28px;}
-    .controls-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;}
-    .form-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:20px;}
-    .form-group label{display:block;margin-bottom:8px;color:var(--text);font-weight:600;}
-    .form-group select,.form-group input{width:100%;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);}
-    .btn-primary{background:var(--accent-green);color:#000;border:none;padding:12px 24px;border-radius:8px;font-weight:600;cursor:pointer;}
-    .chart-container{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px;}
-    .chart-title{color:var(--accent-green);font-size:20px;margin-bottom:16px;}
-    .chart-wrapper{height:500px;background:var(--bg);border-radius:8px;}
-</style>
+<div class="page">
 
-<div class="feature-container">
-    <div style="margin-bottom:16px;">
-        <a href="{% url 'market_detail' market %}" style="color:var(--accent-green);text-decoration:none;font-weight:600;">← Back to {{ market_name }}</a>
-    </div>
-    <div class="feature-header">
-        <h1>{{ feature.icon }} {{ feature.name }} - {{ market_name }}</h1>
-        <p>Advanced charts and visualizations for selected tickers and timelines</p>
-    </div>
+  <a href="{% url 'market_detail' market %}" style="color:var(--accent); text-decoration:none; font-weight:500; font-size:var(--text-sm); display:inline-flex; align-items:center; gap:4px; margin-bottom:var(--space-4);">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    Back to {{ market_name }}
+  </a>
 
-    <div class="controls-card">
-        <form id="vizForm">
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="ticker">Select Ticker</label>
-                    <select id="ticker" name="ticker" required>
-                        <option value="">Choose ticker</option>
-                        {% for ticker in tickers %}
-                        <option value="{{ ticker }}">{{ ticker|slice:":15" }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="timeline">Time Period</label>
-                    <select id="timeline" name="timeline" required>
-                        <option value="1D">1 Day</option>
-                        <option value="5D">5 Days</option>
-                        <option value="1M">1 Month</option>
-                        <option value="3M">3 Months</option>
-                        <option value="6M">6 Months</option>
-                        <option value="1Y">1 Year</option>
-                        <option value="5Y">5 Years</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="chartType">Chart Type</label>
-                    <select id="chartType" name="chartType" required>
-                        <option value="candlestick">Candlestick</option>
-                        <option value="line">Line</option>
-                        <option value="area">Area</option>
-                        <option value="bars">Bars</option>
-                    </select>
-                </div>
-            </div>
-            <button type="submit" class="btn-primary">Generate Visualization</button>
-        </form>
-    </div>
+  <section class="card" style="margin-bottom: var(--space-5);">
+    <h1 class="display" style="color:var(--accent); margin:0 0 var(--space-1); font-size:var(--text-2xl);">{{ feature.name }} — {{ market_name }}</h1>
+    <p style="color:var(--muted); margin:0; font-size:var(--text-sm);">Advanced charts and visualizations for selected tickers and timelines.</p>
+  </section>
 
-    <div class="chart-container">
-        <div class="chart-title">Price Chart</div>
-        <div id="mainChart" class="chart-wrapper"></div>
+  <form id="vizForm" class="card" style="margin-bottom: var(--space-5);" novalidate>
+    {% csrf_token %}
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-4);">
+      <div>
+        <label for="ticker" style="display:block; margin-bottom:var(--space-2); font-weight:600; font-size:var(--text-sm);">Select ticker</label>
+        <select id="ticker" name="ticker" required style="width:100%; padding:10px 12px; background:var(--bg-raised); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:var(--text-sm);">
+          <option value="">Choose ticker</option>
+          {% for ticker in tickers %}
+          <option value="{{ ticker }}">{{ ticker|slice:":15" }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="timeline" style="display:block; margin-bottom:var(--space-2); font-weight:600; font-size:var(--text-sm);">Time period</label>
+        <select id="timeline" name="timeline" required style="width:100%; padding:10px 12px; background:var(--bg-raised); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:var(--text-sm);">
+          <option value="1D">1 day</option>
+          <option value="5D">5 days</option>
+          <option value="1M">1 month</option>
+          <option value="3M">3 months</option>
+          <option value="6M">6 months</option>
+          <option value="1Y">1 year</option>
+          <option value="5Y">5 years</option>
+        </select>
+      </div>
+      <div>
+        <label for="chartType" style="display:block; margin-bottom:var(--space-2); font-weight:600; font-size:var(--text-sm);">Chart type</label>
+        <select id="chartType" name="chartType" required style="width:100%; padding:10px 12px; background:var(--bg-raised); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:var(--text-sm);">
+          <option value="candlestick">Candlestick</option>
+          <option value="line">Line</option>
+          <option value="area">Area</option>
+          <option value="bars">Bars</option>
+        </select>
+      </div>
     </div>
+    <button type="submit" class="btn btn-primary">Generate visualization</button>
+    <span id="tickerError" role="alert" style="display:none; color:var(--loss); font-size:var(--text-xs); margin-left:var(--space-3);"></span>
+  </form>
 
-    <div class="chart-container">
-        <div class="chart-title">Volume Analysis</div>
-        <div id="volumeChart" class="chart-wrapper"></div>
+  <div class="card card-flush" style="margin-bottom: var(--space-5);">
+    <div style="padding: var(--space-3) var(--space-4); border-bottom:1px solid var(--border); color:var(--accent); font-weight:600; font-size:var(--text-sm);">Price chart</div>
+    <div id="mainChart" style="height:500px; position:relative;">
+      <div class="loading-overlay" id="loading_mainChart" style="display:none; position:absolute; inset:0; background:rgba(11,18,32,0.7); align-items:center; justify-content:center;">
+        <div style="text-align:center;"><div class="spinner" style="margin:0 auto var(--space-2);"></div><div style="color:var(--muted); font-size:var(--text-xs);">Loading…</div></div>
+      </div>
     </div>
+  </div>
 
-    <div class="chart-container">
-        <div class="chart-title">Technical Indicators</div>
-        <div id="indicatorsChart" class="chart-wrapper"></div>
+  <div class="card card-flush" style="margin-bottom: var(--space-5);">
+    <div style="padding: var(--space-3) var(--space-4); border-bottom:1px solid var(--border); color:var(--accent); font-weight:600; font-size:var(--text-sm);">Volume analysis</div>
+    <div id="volumeChart" style="height:500px; position:relative;">
+      <div class="loading-overlay" id="loading_volumeChart" style="display:none; position:absolute; inset:0; background:rgba(11,18,32,0.7); align-items:center; justify-content:center;">
+        <div style="text-align:center;"><div class="spinner" style="margin:0 auto var(--space-2);"></div><div style="color:var(--muted); font-size:var(--text-xs);">Loading…</div></div>
+      </div>
     </div>
+  </div>
+
+  <div class="card card-flush">
+    <div style="padding: var(--space-3) var(--space-4); border-bottom:1px solid var(--border); color:var(--accent); font-weight:600; font-size:var(--text-sm);">Technical indicators</div>
+    <div id="indicatorsChart" style="height:500px; position:relative;">
+      <div class="loading-overlay" id="loading_indicatorsChart" style="display:none; position:absolute; inset:0; background:rgba(11,18,32,0.7); align-items:center; justify-content:center;">
+        <div style="text-align:center;"><div class="spinner" style="margin:0 auto var(--space-2);"></div><div style="color:var(--muted); font-size:var(--text-xs);">Loading…</div></div>
+      </div>
+    </div>
+  </div>
+
 </div>
+{% endblock %}
 
+{% block extra_scripts %}
 <script src="https://s3.tradingview.com/tv.js"></script>
 <script>
-let mainChartWidget = null;
-let volumeChartWidget = null;
-let indicatorsChartWidget = null;
-const marketType = "{{ market_type }}";
+const STYLE_MAP = { candlestick: '1', line: '2', area: '3', bars: '0' };
+const INTERVAL_MAP = { '1D': '60', '5D': '240', '1M': 'D', '3M': 'W', '6M': 'W', '1Y': 'W', '5Y': 'M' };
 
-function waitForTradingView(callback) {
-    if (typeof TradingView !== 'undefined') {
-        callback();
-    } else {
-        setTimeout(() => waitForTradingView(callback), 100);
-    }
-}
-
-// Symbol formatting helper
 function formatSymbolForTradingView(symbol) {
-    if (!symbol) return "SP:SPX";
-    // If already formatted with exchange, return as is
-    if (symbol.includes(":")) {
-        return symbol;
-    }
-    // Return as is - backend already formats it
-    return symbol;
+  if (!symbol) return 'SP:SPX';
+  return symbol;
 }
 
-document.getElementById('vizForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const ticker = document.getElementById('ticker').value;
-    const timeline = document.getElementById('timeline').value;
-    const chartType = document.getElementById('chartType').value;
-    
-    if (!ticker) {
-        alert('Please select a ticker');
-        return;
+document.getElementById('vizForm').addEventListener('submit', function (e) {
+  e.preventDefault();
+  const ticker = document.getElementById('ticker').value;
+  const timeline = document.getElementById('timeline').value;
+  const chartType = document.getElementById('chartType').value;
+  const tickerError = document.getElementById('tickerError');
+
+  if (!ticker) {
+    tickerError.textContent = 'Please select a ticker.';
+    tickerError.style.display = 'inline';
+    return;
+  }
+  tickerError.style.display = 'none';
+
+  const formattedSymbol = formatSymbolForTradingView(ticker);
+  const interval = INTERVAL_MAP[timeline] || 'D';
+  const style = STYLE_MAP[chartType] || '1';
+
+  ['loading_mainChart', 'loading_volumeChart', 'loading_indicatorsChart'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'flex';
+  });
+
+  window.FinSightCharts.renderChart('mainChart', formattedSymbol, {
+    height: 500, interval, displayName: ticker,
+  });
+
+  window.FinSightCharts.waitForTradingView(function () {
+    try {
+      new TradingView.widget({
+        width: '100%', height: 500, symbol: formattedSymbol, interval, timezone: 'Etc/UTC',
+        theme: document.body.classList.contains('light') ? 'light' : 'dark', style: '2',
+        locale: 'en', toolbar_bg: 'transparent', enable_publishing: false,
+        studies: ['Volume@tv-basicstudies'], container_id: 'volumeChart',
+        onchartready: () => { const l = document.getElementById('loading_volumeChart'); if (l) l.style.display = 'none'; },
+      });
+    } catch (e) {
+      const l = document.getElementById('loading_volumeChart'); if (l) l.style.display = 'none';
     }
-    
-    const formattedSymbol = formatSymbolForTradingView(ticker);
-    
-    const intervalMap = {
-        '1D': '60',
-        '5D': '240',
-        '1M': 'D',
-        '3M': 'W',
-        '6M': 'W',
-        '1Y': 'W',
-        '5Y': 'M'
-    };
-    
-    const interval = intervalMap[timeline] || 'D';
-    
-    waitForTradingView(function() {
-        // Clear previous charts
-        const mainChart = document.getElementById('mainChart');
-        const volumeChart = document.getElementById('volumeChart');
-        const indicatorsChart = document.getElementById('indicatorsChart');
-        
-        // Show loading states
-        mainChart.innerHTML = '<div class="chart-skeleton"></div>';
-        volumeChart.innerHTML = '<div class="chart-skeleton"></div>';
-        indicatorsChart.innerHTML = '<div class="chart-skeleton"></div>';
-        
-        try {
-            // Main price chart
-            mainChartWidget = new TradingView.widget({
-                width: "100%",
-                height: 500,
-                symbol: formattedSymbol,
-                interval: interval,
-                timezone: "Etc/UTC",
-                theme: "dark",
-                style: chartType === 'candlestick' ? "1" : chartType === 'line' ? "2" : chartType === 'area' ? "3" : "0",
-                locale: "en",
-                toolbar_bg: "#111",
-                enable_publishing: false,
-                container_id: "mainChart"
-            });
-            
-            // Volume chart
-            volumeChartWidget = new TradingView.widget({
-                width: "100%",
-                height: 500,
-                symbol: formattedSymbol,
-                interval: interval,
-                timezone: "Etc/UTC",
-                theme: "dark",
-                style: "2",
-                locale: "en",
-                toolbar_bg: "#111",
-                enable_publishing: false,
-                studies: ["Volume@tv-basicstudies"],
-                container_id: "volumeChart"
-            });
-            
-            // Indicators chart
-            indicatorsChartWidget = new TradingView.widget({
-                width: "100%",
-                height: 500,
-                symbol: formattedSymbol,
-                interval: interval,
-                timezone: "Etc/UTC",
-                theme: "dark",
-                style: "1",
-                locale: "en",
-                toolbar_bg: "#111",
-                enable_publishing: false,
-                studies: ["RSI@tv-basicstudies", "MACD@tv-basicstudies", "MA Cross@tv-basicstudies"],
-                container_id: "indicatorsChart"
-            });
-        } catch (error) {
-            console.error('Error creating charts:', error);
-            mainChart.innerHTML = '<div class="fade-in" style="padding:20px;color:#ff4444;text-align:center;">Error loading charts for ' + ticker + '. Symbol may be invalid.</div>';
-            volumeChart.innerHTML = '';
-            indicatorsChart.innerHTML = '';
-        }
-    });
+
+    try {
+      new TradingView.widget({
+        width: '100%', height: 500, symbol: formattedSymbol, interval, timezone: 'Etc/UTC',
+        theme: document.body.classList.contains('light') ? 'light' : 'dark', style,
+        locale: 'en', toolbar_bg: 'transparent', enable_publishing: false,
+        studies: ['RSI@tv-basicstudies', 'MACD@tv-basicstudies', 'MA Cross@tv-basicstudies'],
+        container_id: 'indicatorsChart',
+        onchartready: () => { const l = document.getElementById('loading_indicatorsChart'); if (l) l.style.display = 'none'; },
+      });
+    } catch (e) {
+      const l = document.getElementById('loading_indicatorsChart'); if (l) l.style.display = 'none';
+    }
+  });
 });
 </script>
 {% endblock %}
-

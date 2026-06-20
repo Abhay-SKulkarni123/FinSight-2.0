@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Model Health — FinSight{% endblock %}
+{% block meta_description %}Live accuracy tracking for FinSight's prediction models — real RMSE, MAE, and retrain history, not marketing claims.{% endblock %}
+
+{% block content %}
+<div class="page">
+
+  <section class="card" style="margin-bottom: var(--space-5);">
+    <h1 class="display" style="color:var(--accent); margin:0 0 var(--space-2); font-size:var(--text-2xl);">Model health</h1>
+    <p style="color:var(--text-dim); line-height:1.7; max-width:760px; margin:0;">
+      Every time a prediction model trains, its accuracy gets logged here — honestly. This page shows real RMSE, MAE, and R² per ticker, with full retrain history. Nothing here is a marketing number; it's exactly what the model produced.
+    </p>
+  </section>
+
+  {% if health.total_tracked == 0 %}
+  <div class="card" style="text-align:center; padding: var(--space-8) var(--space-5); color:var(--muted);">
+    <div style="font-weight:600; margin-bottom:4px; color:var(--text);">No models trained yet</div>
+    <p style="margin:0; font-size:var(--text-sm);">Run a prediction on any ticker and its accuracy metrics will appear here automatically.</p>
+  </div>
+  {% else %}
+
+  <div class="grid-3" style="margin-bottom: var(--space-5);">
+    <div class="card">
+      <div style="color:var(--muted); font-size:var(--text-xs); margin-bottom:6px;">Tickers tracked</div>
+      <div class="mono" style="font-size:var(--text-xl); font-weight:600;">{{ health.total_tracked }}</div>
+    </div>
+    <div class="card">
+      <div style="color:var(--muted); font-size:var(--text-xs); margin-bottom:6px;">Total retrains logged</div>
+      <div class="mono" style="font-size:var(--text-xl); font-weight:600;">{{ health.total_retrains }}</div>
+    </div>
+    <div class="card">
+      <div style="color:var(--muted); font-size:var(--text-xs); margin-bottom:6px;">Avg retrains per ticker</div>
+      <div class="mono" style="font-size:var(--text-xl); font-weight:600;">{{ avg_retrains|default:"—" }}</div>
+    </div>
+  </div>
+
+  <div style="display:flex; flex-direction:column; gap:var(--space-4);">
+    {% for t in health.tickers %}
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:var(--space-3); margin-bottom: var(--space-4);">
+        <div>
+          <div class="mono" style="font-size:var(--text-lg); font-weight:600;">{{ t.ticker }}</div>
+          <div style="color:var(--muted); font-size:var(--text-xs); margin-top:2px;">{{ t.horizon_days }}-day horizon · {{ t.training_samples }} training samples · last trained {{ t.last_trained|slice:":10" }}</div>
+        </div>
+        <div style="display:flex; gap:var(--space-5);">
+          <div style="text-align:right;">
+            <div style="color:var(--muted); font-size:var(--text-xs);">RMSE</div>
+            <div class="mono" style="font-weight:600;">{{ t.latest_rmse }}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="color:var(--muted); font-size:var(--text-xs);">MAE</div>
+            <div class="mono" style="font-weight:600;">{{ t.latest_mae }}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="color:var(--muted); font-size:var(--text-xs);">R²</div>
+            <div class="mono" style="font-weight:600; color:{% if t.latest_r2 > 0 %}var(--gain){% else %}var(--loss){% endif %};">{{ t.latest_r2 }}</div>
+          </div>
+        </div>
+      </div>
+
+      {% if t.retrain_count > 1 %}
+      <canvas id="chart_{{ t.ticker|slugify }}" height="60" role="img" aria-label="RMSE trend for {{ t.ticker }} across {{ t.retrain_count }} retrains"></canvas>
+      {% else %}
+      <p style="color:var(--muted); font-size:var(--text-xs); margin:0; font-style:italic;">Only one training run logged so far — trend chart will appear after the next retrain.</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {% endif %}
+</div>
+
+{{ health.tickers|json_script:"health-data" }}
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const healthData = JSON.parse(document.getElementById('health-data').textContent);
+const charts = {};
+
+healthData.forEach(t => {
+  if (t.retrain_count <= 1) return;
+  const canvasId = `chart_${t.ticker.toLowerCase()}`;
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  charts[t.ticker] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: t.history.map((h, i) => `Retrain ${i + 1}`),
+      datasets: [{
+        label: 'RMSE',
+        data: t.history.map(h => h.rmse),
+        borderColor: '#D4A24C',
+        backgroundColor: 'rgba(212,162,76,0.12)',
+        fill: true,
+        tension: 0.2,
+        pointRadius: 3,
+      }],
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#7A8699', font: { size: 10 } } },
+        y: { ticks: { color: '#7A8699', font: { size: 10 } } },
+      },
+    },
+  });
+});
+</script>
+{% endblock %}

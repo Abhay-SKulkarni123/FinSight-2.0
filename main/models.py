@@ -37,18 +37,19 @@ class UserPortfolio(models.Model):
 class ModelMetrics(models.Model):
     ticker = models.CharField(max_length=50)
     market_type = models.CharField(max_length=50, blank=True)
+    horizon_days = models.IntegerField(default=1)
     rmse = models.FloatField()
     mae = models.FloatField()
     r2_score = models.FloatField(default=0.0)
     training_samples = models.IntegerField(default=0)
-    trained_at = models.DateTimeField(auto_now=True)
+    trained_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['-trained_at']
-        indexes = [models.Index(fields=['ticker'])]
+        indexes = [models.Index(fields=['ticker']), models.Index(fields=['ticker', 'horizon_days'])]
 
     def __str__(self):
-        return f"{self.ticker} — RMSE: {self.rmse:.4f}"
+        return f"{self.ticker} ({self.horizon_days}d) — RMSE: {self.rmse:.4f}"
 
 
 class PredictionHistory(models.Model):
