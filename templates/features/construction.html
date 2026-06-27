@@ -122,6 +122,7 @@ function el(tag, props, children) {
 }
 
 function renderAllocationChart(allocation) {
+  const theme = window.FinSightChartTheme;
   const ctx = document.getElementById('allocationChart').getContext('2d');
   const labels = Object.keys(allocation);
   const values = labels.map(t => allocation[t].percentage);
@@ -130,15 +131,18 @@ function renderAllocationChart(allocation) {
     type: 'doughnut',
     data: {
       labels,
-      datasets: [{ data: values, backgroundColor: labels.map((_, i) => PALETTE[i % PALETTE.length]), borderWidth: 0 }],
+      datasets: [theme.doughnutDataset(values)],
     },
-    options: {
-      plugins: { legend: { position: 'bottom', labels: { color: 'var(--text-dim)', font: { size: 11 } } } },
-    },
+    options: theme.baseOptions({
+      cutout: '68%',
+      plugins: { legend: { position: 'bottom', labels: { color: theme.PALETTE.muted, font: { size: 11 }, usePointStyle: true, pointStyle: 'circle', padding: 14 } } },
+      scales: {},
+    }),
   });
 }
 
 function renderFrontierChart(frontier, ownReturn, ownVol) {
+  const theme = window.FinSightChartTheme;
   const canvasEl = document.getElementById('frontierChart');
   const container = canvasEl ? canvasEl.parentElement : null;
   if (!container) return;
@@ -162,28 +166,35 @@ function renderFrontierChart(frontier, ownReturn, ownVol) {
         {
           label: 'Efficient frontier',
           data: frontier.map(p => ({ x: p.volatility, y: p.return })),
-          borderColor: '#4C7FD4',
-          backgroundColor: '#4C7FD4',
+          borderColor: theme.PALETTE.info,
+          backgroundColor: theme.hexToRgba(theme.PALETTE.info, 0.65),
           showLine: true,
-          pointRadius: 2,
+          tension: 0.3,
+          pointRadius: 2.5,
+          pointHoverRadius: 5,
+          borderWidth: 2.5,
         },
         {
           label: 'Your portfolio',
           data: [{ x: ownVol, y: ownReturn }],
-          backgroundColor: '#D4A24C',
-          pointRadius: 7,
-          pointHoverRadius: 9,
+          backgroundColor: theme.PALETTE.accentBright,
+          borderColor: '#fff',
+          borderWidth: 2,
+          pointRadius: 8,
+          pointHoverRadius: 10,
+          pointStyle: 'star',
         },
       ],
     },
-    options: {
-      plugins: { legend: { position: 'bottom', labels: { color: 'var(--text-dim)', font: { size: 11 } } } },
+    options: theme.baseOptions({
+      plugins: { legend: { position: 'bottom', labels: { color: theme.PALETTE.muted, font: { size: 11 }, usePointStyle: true, padding: 14 } } },
       scales: {
-        x: { title: { display: true, text: 'Volatility %', color: 'var(--muted)' }, ticks: { color: 'var(--muted)' } },
-        y: { title: { display: true, text: 'Return %', color: 'var(--muted)' }, ticks: { color: 'var(--muted)' } },
+        x: { title: { display: true, text: 'Volatility %', color: theme.PALETTE.muted, font: { size: 11 } }, grid: { color: theme.PALETTE.grid }, border: { display: false }, ticks: { color: theme.PALETTE.muted } },
+        y: { title: { display: true, text: 'Return %', color: theme.PALETTE.muted, font: { size: 11 } }, grid: { color: theme.PALETTE.grid }, border: { display: false }, ticks: { color: theme.PALETTE.muted } },
       },
-    },
+    }),
   });
+  theme.applyGlow(canvas, theme.PALETTE.info, 6);
 }
 
 function renderCoach(data) {

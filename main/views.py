@@ -1,3 +1,5 @@
+from venv import logger
+
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
@@ -30,7 +32,7 @@ MARKETS = {
     },
     "indices": {
         "name": "Indices",
-        "tickers": ["SP:SPX", "DJ:DJI", "NASDAQ:IXIC", "RUT", "CBOE:VIX", "LSE:UKX", "TSE:NKY", "XETR:DAX"],
+        "tickers": ["SP:SPX", "DJ:DJI", "NASDAQ:IXIC", "TVC:RUT", "CBOE:VIX", "LSE:UKX", "TSE:NKY", "XETR:DAX"],
         "description": "Market indices tracking and analysis",
         "detailed_description": "Market indices track the performance of a basket of stocks, representing overall market health. Major indices like the S&P 500, Dow Jones, and NASDAQ provide insights into economic trends and investor sentiment. Indices are less volatile than individual stocks and offer diversified exposure to market segments. They're used as benchmarks for portfolio performance and can be traded through ETFs and futures. Understanding index composition, sector weightings, and correlation patterns helps investors make informed decisions about market direction and portfolio allocation."
     },
@@ -54,8 +56,8 @@ MARKETS = {
     },
     "bonds": {
         "name": "Bonds",
-        "tickers": ["TVC:US10Y", "TVC:US30Y", "TVC:US5Y", "TVC:US2Y", "TVC:T10Y2Y", "TVC:T10Y3M", "TVC:DGS10", "TVC:DGS30"],
-        "description": "Bond market yields and analysis",
+        "tickers": ["NASDAQ:SHY", "NASDAQ:IEF", "NASDAQ:TLT", "NASDAQ:BND", "NASDAQ:AGG", "NASDAQ:LQD", "NASDAQ:HYG", "NASDAQ:TIP"],
+        "description": "Treasury and corporate bond ETFs across durations",
         "detailed_description": "Bond markets represent debt securities issued by governments and corporations. Bond prices move inversely to yields, making them sensitive to interest rate changes and economic conditions. Government bonds (like US Treasuries) are considered safe-haven assets, while corporate bonds offer higher yields with increased risk. Bond markets are influenced by central bank policies, inflation expectations, credit ratings, and economic data. Understanding yield curves, duration, and credit spreads is crucial for bond trading. Bonds provide portfolio diversification and income generation opportunities."
     },
     "etfs": {
@@ -238,6 +240,166 @@ RESOURCE_LIBRARY = {
             "url": "https://openknowledge.worldbank.org/",
             "category": "🎓 Deep Dives"
         }
+    ],
+    "indices": [
+        {
+            "title": "S&P Dow Jones Indices — Index Education",
+            "description": "Official methodology guides for how major benchmark indices like the S&P 500 are constructed and weighted.",
+            "url": "https://www.spglobal.com/spdji/en/education/",
+            "category": "📘 Guides & Primers"
+        },
+        {
+            "title": "investor.gov — Indexes",
+            "description": "SEC's plain-language explainer on what a market index is and how index funds track them.",
+            "url": "https://www.investor.gov/introduction-investing/investing-basics/glossary/index",
+            "category": "📘 Guides & Primers"
+        },
+        {
+            "title": "Yahoo Finance World Indices",
+            "description": "Live dashboard tracking major global indices side by side, with historical charting.",
+            "url": "https://finance.yahoo.com/world-indices/",
+            "category": "📊 Analytics & Dashboards"
+        }
+    ],
+    "metals": [
+        {
+            "title": "Britannica Money — Investing in Gold & Precious Metals",
+            "description": "Balanced, editorially reviewed overview of coins, bars, ETFs, and mining stocks for metals exposure.",
+            "url": "https://www.britannica.com/money/investing-in-gold",
+            "category": "📘 Guides & Primers"
+        },
+        {
+            "title": "ETF.com — Precious Metals ETFs",
+            "description": "Independent rankings and analysis of gold, silver, platinum, and palladium ETFs.",
+            "url": "https://www.etf.com/sections/etf-basics/best-precious-metals-etfs-performance",
+            "category": "📊 Analytics & Dashboards"
+        },
+        {
+            "title": "ETF Database — Precious Metals Category",
+            "description": "Full screener of precious metals ETFs with expense ratios, holdings, and historical returns.",
+            "url": "https://etfdb.com/etfdb-category/precious-metals/",
+            "category": "🛠️ Tools & APIs"
+        }
+    ],
+    "energy": [
+        {
+            "title": "U.S. Energy Information Administration (EIA)",
+            "description": "The official, independent U.S. government source for energy data, weekly inventory reports, and forecasts.",
+            "url": "https://www.eia.gov/",
+            "category": "📘 Guides & Primers"
+        },
+        {
+            "title": "CME Group — Introduction to Energy",
+            "description": "Exchange-run course covering crude oil, natural gas, and refined product futures fundamentals.",
+            "url": "https://www.cmegroup.com/education/courses/introduction-to-energy.html",
+            "category": "🎓 Deep Dives"
+        },
+        {
+            "title": "EIA Weekly Petroleum Status Report",
+            "description": "The actual weekly crude and gasoline inventory data that moves energy markets every Wednesday.",
+            "url": "https://www.eia.gov/petroleum/supply/weekly/",
+            "category": "📊 Analytics & Dashboards"
+        }
+    ],
+    "bonds": [
+        {
+            "title": "investor.gov — Bonds Basics",
+            "description": "SEC's official primer on what bonds are, how they're priced, and the risks involved.",
+            "url": "https://www.investor.gov/introduction-investing/investing-basics/investment-products/bonds-or-fixed-income-products/bonds",
+            "category": "📘 Guides & Primers"
+        },
+        {
+            "title": "TreasuryDirect.gov",
+            "description": "The official U.S. government platform for buying and tracking Treasury bonds, notes, and bills directly.",
+            "url": "https://www.treasurydirect.gov/",
+            "category": "🛠️ Tools & APIs"
+        },
+        {
+            "title": "FINRA — Bonds",
+            "description": "Real-time corporate and agency bond data alongside investor-focused educational explainers.",
+            "url": "https://www.finra.org/investors/investing/investment-products/bonds",
+            "category": "📊 Analytics & Dashboards"
+        }
+    ],
+    "etfs": [
+        {
+            "title": "investor.gov — Exchange-Traded Funds",
+            "description": "SEC's official guide to how ETFs work, their structure, and key risks to understand before investing.",
+            "url": "https://www.investor.gov/introduction-investing/investing-basics/investment-products/mutual-funds-and-exchange-traded-1",
+            "category": "📘 Guides & Primers"
+        },
+        {
+            "title": "ETF.com",
+            "description": "Independent ETF news, rankings, and fund comparison tools covering the full market.",
+            "url": "https://www.etf.com/",
+            "category": "📊 Analytics & Dashboards"
+        },
+        {
+            "title": "ETF Database Screener",
+            "description": "Filterable database of every U.S.-listed ETF with expense ratios, holdings, and category rankings.",
+            "url": "https://etfdb.com/",
+            "category": "🛠️ Tools & APIs"
+        }
+    ],
+    "futures": [
+        {
+            "title": "CME Group Education",
+            "description": "The exchange's own free course library covering futures and options mechanics from the source.",
+            "url": "https://www.cmegroup.com/education",
+            "category": "📘 Guides & Primers"
+        },
+        {
+            "title": "investor.gov — Futures",
+            "description": "SEC/CFTC joint plain-language overview of futures contracts, margin, and leverage risk.",
+            "url": "https://www.investor.gov/introduction-investing/investing-basics/investment-products/derivatives/futures",
+            "category": "📘 Guides & Primers"
+        },
+        {
+            "title": "CME Group Market Data",
+            "description": "Live and historical futures pricing data straight from the exchange.",
+            "url": "https://www.cmegroup.com/markets/energy.html",
+            "category": "📊 Analytics & Dashboards"
+        }
+    ],
+    "commodities": [
+        {
+            "title": "CME Group Education",
+            "description": "Free exchange-run courses covering agricultural and soft commodity futures fundamentals.",
+            "url": "https://www.cmegroup.com/education",
+            "category": "📘 Guides & Primers"
+        },
+        {
+            "title": "U.S. Department of Agriculture — Market News",
+            "description": "Official USDA agricultural commodity pricing and supply/demand reports.",
+            "url": "https://www.ams.usda.gov/market-news",
+            "category": "📊 Analytics & Dashboards"
+        },
+        {
+            "title": "World Bank Commodity Markets Outlook",
+            "description": "Quarterly global commodity price forecasts and analysis across energy, metals, and agriculture.",
+            "url": "https://www.worldbank.org/en/research/commodity-markets",
+            "category": "🎓 Deep Dives"
+        }
+    ],
+    "indian_markets": [
+        {
+            "title": "SEBI Investor Education",
+            "description": "India's official securities regulator's reading material — from KYC basics to derivatives and fraud safeguards.",
+            "url": "https://investor.sebi.gov.in/iematerial.html",
+            "category": "📘 Guides & Primers"
+        },
+        {
+            "title": "NSE India — Investor's Home",
+            "description": "The National Stock Exchange's own investor section covering trading accounts, IPOs, and grievance redressal.",
+            "url": "https://www.nseindia.com/static/invest/investors-home",
+            "category": "📘 Guides & Primers"
+        },
+        {
+            "title": "NSE Academy",
+            "description": "NSE's certification and self-paced course platform for capital markets, derivatives, and technical analysis.",
+            "url": "https://www.nseacademy.com/",
+            "category": "🎓 Deep Dives"
+        }
     ]
 }
 
@@ -252,11 +414,12 @@ LIVE_NEWS_CATEGORIES = {
     "bonds": "business",
     "etfs": "business",
     "crypto": "technology",
-    "forex": "business",
-    "metals": "science",
-    "energy": "science",
+    "forex": "world",
+    "metals": "business",
+    "energy": "world",
     "futures": "business",
-    "commodities": "science",
+    "commodities": "miscellaneous",
+    "indian_markets": "national",
 }
 
 DEFAULT_NEWS_FALLBACK = [
@@ -579,6 +742,32 @@ def format_symbol_for_tradingview(symbol, market_type):
     # Default: return as is
     return symbol
 
+@require_http_methods(["GET"])
+def dashboard(request):
+    """Personalized post-login view: watchlist, recent predictions, portfolio snapshot."""
+    if not request.user.is_authenticated:
+        from django.shortcuts import redirect
+        return redirect('account_login')
+
+    from .models import Watchlist, PredictionHistory, UserPortfolio
+
+    watchlist = Watchlist.objects.filter(user=request.user)[:10]
+    recent_predictions = PredictionHistory.objects.filter(user=request.user).order_by('-created_at')[:10]
+    holdings = UserPortfolio.objects.filter(user=request.user)
+
+    holdings_count = holdings.count()
+    watchlist_count = watchlist.count()
+
+    context = {
+        'watchlist': watchlist,
+        'recent_predictions': recent_predictions,
+        'holdings': holdings,
+        'holdings_count': holdings_count,
+        'watchlist_count': watchlist_count,
+        'has_any_activity': watchlist_count > 0 or holdings_count > 0 or recent_predictions.exists(),
+    }
+    return render(request, 'dashboard.html', context)
+
 def home(request):
     context = {
         "markets_json": json.dumps(MARKETS),
@@ -777,7 +966,6 @@ def optimize_portfolio_api(request):
 
 @require_http_methods(["GET"])
 def market_news_api(request):
-    """Return aggregated market news for a given market."""
     market = request.GET.get('market', 'stocks').lower()
     limit = int(request.GET.get('limit', 12))
     if market not in MARKETS:
@@ -787,68 +975,86 @@ def market_news_api(request):
     cache_key = f"news:{market}:{limit}"
     cached_articles = cache.get(cache_key)
     if cached_articles:
-        cached_response = JsonResponse({'success': True, 'market': market, 'articles': cached_articles, 'cached': True})
-        cached_response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-        return cached_response
+        response = JsonResponse({
+            'success': True,
+            'market': market,
+            'articles': cached_articles,
+            'cached': True,
+        })
+        response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        return response
 
     tickers = MARKETS[market]['tickers']
-    articles = fetch_live_news_from_api(market, limit=limit)
+    articles = []
     seen_links = set()
 
-    for article in articles:
-        seen_links.add(article['link'])
-
     for symbol in tickers:
+        if len(articles) >= limit:
+            break
         normalized = normalize_ticker_for_yfinance(symbol)
         if not normalized:
             continue
         try:
             ticker_obj = yf.Ticker(normalized)
             ticker_news = getattr(ticker_obj, 'news', []) or []
-        except Exception:
-            ticker_news = []
+        except Exception as e:
+            logger.warning(f"yfinance news fetch failed for {normalized}: {e}")
+            continue
 
         for item in ticker_news:
-            link = item.get('link')
+            # yfinance's news payload has nested most fields under "content"
+            # in recent versions — handle both shapes defensively since this
+            # has changed across yfinance releases without a major version bump.
+            content = item.get('content', item) if isinstance(item, dict) else {}
+            link = (
+                content.get('canonicalUrl', {}).get('url')
+                or content.get('clickThroughUrl', {}).get('url')
+                or item.get('link')
+            )
             if not link or link in seen_links:
                 continue
             seen_links.add(link)
 
-            published_ts = item.get('providerPublishTime') or item.get('published_at')
-            if published_ts:
+            title = content.get('title') or item.get('title') or 'Untitled story'
+            publisher = (
+                content.get('provider', {}).get('displayName')
+                or item.get('publisher')
+                or 'Yahoo Finance'
+            )
+            summary = content.get('summary') or content.get('description') or item.get('summary')
+
+            published_raw = content.get('pubDate') or item.get('providerPublishTime')
+            published_at = None
+            if published_raw:
                 try:
-                    published_at = datetime.fromtimestamp(int(published_ts), tz=dt_timezone.utc).isoformat()
+                    if isinstance(published_raw, (int, float)):
+                        published_at = datetime.fromtimestamp(int(published_raw), tz=dt_timezone.utc).isoformat()
+                    else:
+                        published_at = str(published_raw)
                 except Exception:
                     published_at = None
-            else:
-                published_at = None
 
             articles.append({
-                'title': item.get('title') or 'Untitled Story',
-                'publisher': item.get('publisher') or item.get('provider') or 'Unknown',
+                'title': title,
+                'publisher': publisher,
                 'link': link,
-                'type': item.get('type') or 'general',
-                'related_tickers': item.get('relatedTickers') or item.get('symbols') or [],
+                'type': 'general',
+                'related_tickers': [symbol.split(':')[-1]],
                 'published_at': published_at,
-                'summary': item.get('summary') or item.get('description')
+                'summary': summary or f"Latest coverage related to {symbol.split(':')[-1]}.",
             })
 
             if len(articles) >= limit:
                 break
 
-        if len(articles) >= limit:
-            break
-
-    if not articles:
-        articles = DEFAULT_NEWS_FALLBACK[:limit]
-
     if articles:
         cache.set(cache_key, articles, 300)  # 5 min cache
 
     response = JsonResponse({
-        'success': True,
+        'success': bool(articles),
         'market': market,
-        'articles': articles
+        'articles': articles,
+        'error': None if articles else 'No live news available for this market right now. Try again shortly.',
     })
     response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
     response['Pragma'] = 'no-cache'

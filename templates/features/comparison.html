@@ -122,9 +122,9 @@ function renderTable(assets) {
 
 function renderChart(chartData) {
   if (!chartData || !chartData.labels || !chartData.series) return;
+  const theme = window.FinSightChartTheme;
   const ctx = document.getElementById('comparisonChart').getContext('2d');
   if (comparisonChart) comparisonChart.destroy();
-  const palette = ['#D4A24C', '#4A9D78', '#4C7FD4', '#C45A4E'];
   comparisonChart = new Chart(ctx, {
     type: 'line',
     data: {
@@ -132,19 +132,18 @@ function renderChart(chartData) {
       datasets: chartData.series.map((series, idx) => ({
         label: series.label,
         data: series.data,
-        borderWidth: 2,
-        borderColor: palette[idx % palette.length],
+        borderColor: theme.SERIES_COLORS[idx % theme.SERIES_COLORS.length],
         backgroundColor: 'transparent',
-        tension: 0.25,
+        borderWidth: 2.5,
+        tension: 0.35,
+        pointRadius: 0,
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: theme.SERIES_COLORS[idx % theme.SERIES_COLORS.length],
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2,
       })),
     },
-    options: {
-      plugins: { legend: { position: 'bottom', labels: { color: 'var(--text-dim)', font: { size: 11 } } } },
-      scales: {
-        x: { ticks: { color: 'var(--muted)' } },
-        y: { ticks: { color: 'var(--muted)' } },
-      },
-    },
+    options: theme.baseOptions(),
   });
 }
 

@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Your dashboard — FinSight{% endblock %}
+{% block meta_description %}Your watchlist, recent predictions, and portfolio at a glance.{% endblock %}
+
+{% block content %}
+<div class="page">
+
+  <section class="card" style="margin-bottom: var(--space-5);">
+    <h1 class="display" style="color:var(--accent); margin:0 0 var(--space-1); font-size:var(--text-2xl);">Welcome back, {{ user.email|slice:":20" }}</h1>
+    <p style="color:var(--muted); margin:0; font-size:var(--text-sm);">Your watchlist, recent predictions, and holdings at a glance.</p>
+  </section>
+
+  {% if not has_any_activity %}
+  <div class="card" style="text-align:center; padding: var(--space-8) var(--space-5); color:var(--muted);">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true" style="margin-bottom:var(--space-3); opacity:0.5;"><path d="M3 17l5-5 4 4 8-9M21 7v6"/></svg>
+    <div style="font-weight:600; margin-bottom:6px; color:var(--text);">Nothing here yet</div>
+    <p style="margin:0 0 var(--space-4); font-size:var(--text-sm);">Run a prediction or add a holding and it'll show up here.</p>
+    <a href="{% url 'home' %}" class="btn btn-primary">Explore markets</a>
+  </div>
+  {% else %}
+
+  <div class="grid-3" style="margin-bottom: var(--space-5);">
+    <div class="card">
+      <div style="color:var(--muted); font-size:var(--text-xs); margin-bottom:6px;">Watchlist</div>
+      <div class="mono" style="font-size:var(--text-xl); font-weight:600;">{{ watchlist_count }}</div>
+    </div>
+    <div class="card">
+      <div style="color:var(--muted); font-size:var(--text-xs); margin-bottom:6px;">Holdings</div>
+      <div class="mono" style="font-size:var(--text-xl); font-weight:600;">{{ holdings_count }}</div>
+    </div>
+    <div class="card">
+      <div style="color:var(--muted); font-size:var(--text-xs); margin-bottom:6px;">Predictions run</div>
+      <div class="mono" style="font-size:var(--text-xl); font-weight:600;">{{ recent_predictions|length }}</div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom: var(--space-5);">
+
+    <div class="card card-flush">
+      <div style="padding: var(--space-3) var(--space-4); border-bottom:1px solid var(--border); color:var(--accent); font-weight:600; font-size:var(--text-sm);">Watchlist</div>
+      {% if watchlist %}
+      <div style="padding: var(--space-2) 0;">
+        {% for item in watchlist %}
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:var(--space-2) var(--space-4);">
+          <span class="mono" style="font-weight:600;">{{ item.ticker }}</span>
+          <span style="color:var(--muted); font-size:var(--text-xs);">{{ item.market|title }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div style="padding: var(--space-5); text-align:center; color:var(--muted); font-size:var(--text-sm);">No tickers watched yet.</div>
+      {% endif %}
+    </div>
+
+    <div class="card card-flush">
+      <div style="padding: var(--space-3) var(--space-4); border-bottom:1px solid var(--border); color:var(--accent); font-weight:600; font-size:var(--text-sm);">Holdings</div>
+      {% if holdings %}
+      <table style="width:100%; border-collapse:collapse;">
+        <tbody>
+          {% for h in holdings %}
+          <tr style="border-bottom:1px solid var(--border);">
+            <td class="mono" style="padding:var(--space-2) var(--space-4); font-weight:600;">{{ h.ticker }}</td>
+            <td class="mono" style="padding:var(--space-2) var(--space-4); color:var(--muted);">{{ h.quantity }} units</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div style="padding: var(--space-5); text-align:center; color:var(--muted); font-size:var(--text-sm);">No holdings tracked yet.</div>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <div class="card card-flush">
+    <div style="padding: var(--space-3) var(--space-4); border-bottom:1px solid var(--border); color:var(--accent); font-weight:600; font-size:var(--text-sm);">Recent predictions</div>
+    {% if recent_predictions %}
+    <table style="width:100%; border-collapse:collapse;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);">
+          <th style="padding:var(--space-3) var(--space-4); text-align:left; color:var(--muted); font-size:var(--text-xs); text-transform:uppercase;">Ticker</th>
+          <th style="padding:var(--space-3) var(--space-4); text-align:left; color:var(--muted); font-size:var(--text-xs); text-transform:uppercase;">Current</th>
+          <th style="padding:var(--space-3) var(--space-4); text-align:left; color:var(--muted); font-size:var(--text-xs); text-transform:uppercase;">Predicted</th>
+          <th style="padding:var(--space-3) var(--space-4); text-align:left; color:var(--muted); font-size:var(--text-xs); text-transform:uppercase;">When</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in recent_predictions %}
+        <tr style="border-bottom:1px solid var(--border);">
+          <td class="mono" style="padding:var(--space-3) var(--space-4); font-weight:600;">{{ p.ticker }}</td>
+          <td class="mono" style="padding:var(--space-3) var(--space-4);">${{ p.current_price|floatformat:2 }}</td>
+          <td class="mono" style="padding:var(--space-3) var(--space-4); color:{% if p.predicted_price >= p.current_price %}var(--gain){% else %}var(--loss){% endif %};">${{ p.predicted_price|floatformat:2 }}</td>
+          <td style="padding:var(--space-3) var(--space-4); color:var(--muted); font-size:var(--text-xs);">{{ p.created_at|timesince }} ago</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div style="padding: var(--space-5); text-align:center; color:var(--muted); font-size:var(--text-sm);">No predictions run yet.</div>
+    {% endif %}
+  </div>
+
+  {% endif %}
+</div>
+{% endblock %}

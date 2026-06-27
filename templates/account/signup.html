@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load allauth account %}
+
+{% block title %}Create account — FinSight{% endblock %}
+
+{% block content %}
+<div class="page" style="max-width: 440px; padding-top: calc(64px + var(--space-10));">
+  <div class="card">
+    <h1 class="display" style="font-size:var(--text-2xl); color:var(--accent); margin:0 0 var(--space-2); text-align:center;">Create your account</h1>
+    <p style="color:var(--muted); text-align:center; margin:0 0 var(--space-5); font-size:var(--text-sm);">Save tickers, track predictions, and build portfolios that persist across visits.</p>
+
+    {% if form.non_field_errors %}
+    <div class="coach" style="margin-bottom:var(--space-4); border-color:var(--loss);">
+      {% for error in form.non_field_errors %}
+      <div class="coach-line" style="border-top:none; padding-top:0;">
+        <span class="coach-badge alert">Error</span>
+        <span>{{ error }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'account_signup' %}" novalidate>
+      {% csrf_token %}
+
+      <div style="margin-bottom: var(--space-4);">
+        <label for="id_email" style="display:block; font-weight:600; margin-bottom:var(--space-2); font-size:var(--text-sm);">Email</label>
+        <input type="email" name="email" id="id_email" required autofocus placeholder="you@example.com"
+               style="width:100%; padding:10px 12px; background:var(--bg-raised); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:var(--text-sm);"
+               value="{{ form.email.value|default:'' }}">
+        {% if form.email.errors %}
+        <span style="display:block; color:var(--loss); font-size:var(--text-xs); margin-top:4px;">{{ form.email.errors.0 }}</span>
+        {% endif %}
+      </div>
+
+      <div style="margin-bottom: var(--space-4);">
+        <label for="id_password1" style="display:block; font-weight:600; margin-bottom:var(--space-2); font-size:var(--text-sm);">Password</label>
+        <input type="password" name="password1" id="id_password1" required placeholder="At least 8 characters"
+               style="width:100%; padding:10px 12px; background:var(--bg-raised); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:var(--text-sm);">
+        {% if form.password1.errors %}
+        <span style="display:block; color:var(--loss); font-size:var(--text-xs); margin-top:4px;">{{ form.password1.errors.0 }}</span>
+        {% endif %}
+      </div>
+
+      <div style="margin-bottom: var(--space-5);">
+        <label for="id_password2" style="display:block; font-weight:600; margin-bottom:var(--space-2); font-size:var(--text-sm);">Confirm password</label>
+        <input type="password" name="password2" id="id_password2" required placeholder="Repeat your password"
+               style="width:100%; padding:10px 12px; background:var(--bg-raised); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:var(--text-sm);">
+        {% if form.password2.errors %}
+        <span style="display:block; color:var(--loss); font-size:var(--text-xs); margin-top:4px;">{{ form.password2.errors.0 }}</span>
+        {% endif %}
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width:100%;">Create account</button>
+    </form>
+
+    <p style="text-align:center; margin-top:var(--space-5); color:var(--muted); font-size:var(--text-sm);">
+      Already have an account? <a href="{% url 'account_login' %}" style="color:var(--accent); text-decoration:none; font-weight:600;">Sign in</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

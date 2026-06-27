@@ -75,6 +75,23 @@
       </div>
 
       <div class="nav-actions">
+        {% if user.is_authenticated %}
+        <div class="nav-group">
+          <button class="nav-group-trigger" aria-expanded="false" aria-haspopup="true" style="border:1px solid var(--border); border-radius:var(--radius-sm);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>
+            {{ user.email|slice:":14" }}
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="nav-dropdown" role="menu" style="right:0; left:auto;">
+            <a href="{% url 'dashboard' %}" role="menuitem">Dashboard</a>
+            <a href="{% url 'model_health' %}" role="menuitem">Model health</a>
+            <a href="{% url 'account_logout' %}" role="menuitem">Sign out</a>
+          </div>
+        </div>
+        {% else %}
+        <a href="{% url 'account_login' %}" class="btn btn-secondary" style="padding:8px 16px; font-size:var(--text-sm);">Sign in</a>
+        <a href="{% url 'account_signup' %}" class="btn btn-primary" style="padding:8px 16px; font-size:var(--text-sm);"><span class="label">Sign up</span></a>
+        {% endif %}
         <button class="btn-icon" id="themeBtn" aria-label="Toggle light and dark theme" title="Toggle theme">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.4 6.4l-.7-.7M6.3 6.3l-.7-.7m12.8 0l-.7.7M6.3 17.7l-.7.7M12 8a4 4 0 100 8 4 4 0 000-8z"/></svg>
         </button>
@@ -90,6 +107,14 @@
 
   <div id="mobileNavPanel" class="card" style="display:none; position:fixed; top:64px; left:0; right:0; z-index:999; margin:0; border-radius:0; border-top:none; max-height:calc(100vh - 64px); overflow:auto;">
     <div style="padding: var(--space-4);">
+      {% if not user.is_authenticated %}
+      <div style="display:flex; gap:var(--space-2); margin-bottom:var(--space-4); padding-bottom:var(--space-4); border-bottom:1px solid var(--border);">
+        <a href="{% url 'account_login' %}" class="btn btn-secondary" style="flex:1; text-align:center;">Sign in</a>
+        <a href="{% url 'account_signup' %}" class="btn btn-primary" style="flex:1; text-align:center;">Sign up</a>
+      </div>
+      {% else %}
+      <a href="{% url 'dashboard' %}" style="display:block; padding:var(--space-2) 0; text-decoration:none; color:var(--accent); font-weight:600; margin-bottom:var(--space-3); border-bottom:1px solid var(--border); padding-bottom:var(--space-3);">Dashboard</a>
+      {% endif %}
       <p class="mono" style="font-size:var(--text-xs); color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin:0 0 var(--space-2);">Equities</p>
       <a href="{% url 'market_detail' 'stocks' %}" style="display:block; padding:var(--space-2) 0; text-decoration:none; color:var(--text);">Stocks</a>
       <a href="{% url 'market_detail' 'indian_markets' %}" style="display:block; padding:var(--space-2) 0; text-decoration:none; color:var(--text);">Indian Markets</a>

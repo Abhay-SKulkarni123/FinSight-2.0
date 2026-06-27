@@ -100,10 +100,7 @@ let priceChartInstance, drawdownChartInstance;
 function renderCharts(history, drawdown) {
   history = history || [];
   drawdown = drawdown || [];
-  const gainColor = getComputedStyle(document.body).getPropertyValue('--gain').trim() || '#4A9D78';
-  const lossColor = getComputedStyle(document.body).getPropertyValue('--loss').trim() || '#C45A4E';
-  const accentColor = getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#D4A24C';
-  const mutedColor = getComputedStyle(document.body).getPropertyValue('--muted').trim() || '#7A8699';
+  const theme = window.FinSightChartTheme;
 
   if (history.length) {
     const ctx = document.getElementById('priceChart').getContext('2d');
@@ -114,24 +111,16 @@ function renderCharts(history, drawdown) {
       type: 'line',
       data: {
         labels,
-        datasets: [{
-          label: 'Close',
-          data: prices,
-          borderColor: accentColor,
-          backgroundColor: accentColor + '1F',
-          fill: true,
-          tension: 0.25,
-          pointRadius: 0,
-        }],
+        datasets: [theme.lineDataset('Close', prices, theme.PALETTE.accent)],
       },
-      options: {
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { color: mutedColor } },
-          y: { ticks: { color: mutedColor } },
+      options: theme.baseOptions({
+        plugins: {
+          legend: { display: false },
+          tooltip: theme.baseOptions().plugins.tooltip,
         },
-      },
+      }),
     });
+    theme.applyGlow(document.getElementById('priceChart'), theme.PALETTE.accent, 8);
   }
 
   if (drawdown.length) {
@@ -146,16 +135,19 @@ function renderCharts(history, drawdown) {
         datasets: [{
           label: 'Drawdown %',
           data: values,
-          backgroundColor: values.map(v => v < -10 ? lossColor : accentColor + 'B3'),
+          backgroundColor: (ctx) => {
+            const v = ctx.raw;
+            const color = v < -10 ? theme.PALETTE.loss : theme.PALETTE.accent;
+            return theme.verticalGradient(ctx, color, 0.9, 0.4);
+          },
+          borderRadius: 6,
+          borderSkipped: false,
+          barPercentage: 0.7,
         }],
       },
-      options: {
+      options: theme.baseOptions({
         plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { color: mutedColor, maxRotation: 0 } },
-          y: { ticks: { color: mutedColor } },
-        },
-      },
+      }),
     });
   }
 }

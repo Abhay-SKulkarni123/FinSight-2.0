@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load allauth account %}
+
+{% block title %}Sign in — FinSight{% endblock %}
+
+{% block content %}
+<div class="page" style="max-width: 440px; padding-top: calc(64px + var(--space-10));">
+  <div class="card">
+    <h1 class="display" style="font-size:var(--text-2xl); color:var(--accent); margin:0 0 var(--space-2); text-align:center;">Welcome back</h1>
+    <p style="color:var(--muted); text-align:center; margin:0 0 var(--space-5); font-size:var(--text-sm);">Sign in to access your watchlist, portfolio, and prediction history.</p>
+
+    {% if form.non_field_errors %}
+    <div class="coach" style="margin-bottom:var(--space-4); border-color:var(--loss);">
+      {% for error in form.non_field_errors %}
+      <div class="coach-line" style="border-top:none; padding-top:0;">
+        <span class="coach-badge alert">Error</span>
+        <span>{{ error }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" action="{% url 'account_login' %}" novalidate>
+      {% csrf_token %}
+
+      <div style="margin-bottom: var(--space-4);">
+        <label for="id_login" style="display:block; font-weight:600; margin-bottom:var(--space-2); font-size:var(--text-sm);">Email</label>
+        <input type="email" name="login" id="id_login" required autofocus placeholder="you@example.com"
+               style="width:100%; padding:10px 12px; background:var(--bg-raised); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:var(--text-sm);"
+               value="{{ form.login.value|default:'' }}">
+        {% if form.login.errors %}
+        <span style="display:block; color:var(--loss); font-size:var(--text-xs); margin-top:4px;">{{ form.login.errors.0 }}</span>
+        {% endif %}
+      </div>
+
+      <div style="margin-bottom: var(--space-4);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-2);">
+          <label for="id_password" style="font-weight:600; font-size:var(--text-sm);">Password</label>
+          <a href="{% url 'account_reset_password' %}" style="color:var(--accent); font-size:var(--text-xs); text-decoration:none;">Forgot password?</a>
+        </div>
+        <input type="password" name="password" id="id_password" required placeholder="••••••••"
+               style="width:100%; padding:10px 12px; background:var(--bg-raised); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:var(--text-sm);">
+        {% if form.password.errors %}
+        <span style="display:block; color:var(--loss); font-size:var(--text-xs); margin-top:4px;">{{ form.password.errors.0 }}</span>
+        {% endif %}
+      </div>
+
+      <label style="display:flex; align-items:center; gap:8px; margin-bottom:var(--space-5); font-size:var(--text-sm); color:var(--text-dim); cursor:pointer;">
+        <input type="checkbox" name="remember" style="width:16px; height:16px; accent-color:var(--accent);">
+        Remember me
+      </label>
+
+      <button type="submit" class="btn btn-primary" style="width:100%;">Sign in</button>
+    </form>
+
+    <p style="text-align:center; margin-top:var(--space-5); color:var(--muted); font-size:var(--text-sm);">
+      Don't have an account? <a href="{% url 'account_signup' %}" style="color:var(--accent); text-decoration:none; font-weight:600;">Sign up</a>
+    </p>
+  </div>
+</div>
+{% endblock %}
