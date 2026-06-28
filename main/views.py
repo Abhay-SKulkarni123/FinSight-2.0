@@ -1048,6 +1048,8 @@ def market_news_api(request):
                 break
 
     if articles:
+        from . import services as svc
+        svc.score_articles(articles)
         cache.set(cache_key, articles, 300)  # 5 min cache
 
     response = JsonResponse({

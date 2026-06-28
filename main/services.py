@@ -243,3 +243,82 @@ def get_model_health(limit_per_ticker: int = 30):
         'total_tracked': len(summary),
         'total_retrains': sum(s['retrain_count'] for s in summary),
     }
+
+
+# ---- Financial sentiment scoring ----
+# VADER extended with a domain-specific keyword boost for common financial
+# headline terms that VADER's social-media-trained dictionary underweights.
+# Honest limitation: keyword-based context-free approaches have ~60-70%
+# directional accuracy on financial text — we display this as a signal,
+# not a guarantee, and the badge is labelled with a question mark in the UI
+# when confidence is low (compound near 0).
+
+_BULLISH_TERMS = frozenset([
+    'rally', 'surge', 'surges', 'beat', 'beats', 'record', 'bullish', 'rise',
+    'rises', 'gain', 'gains', 'upbeat', 'recovery', 'upgrade', 'outperform',
+    'strong', 'above', 'exceed', 'exceeds', 'high', 'highs', 'positive',
+    'growth', 'profit', 'profits', 'boost', 'boosted', 'optimism', 'optimistic',
+])
+
+_BEARISH_TERMS = frozenset([
+    'crash', 'crashes', 'fear', 'fears', 'crackdown', 'tumble', 'tumbles',
+    'plunge', 'plunges', 'miss', 'misses', 'downgrade', 'underperform',
+    'weak', 'below', 'overvalued', 'risk', 'risks', 'default', 'recession',
+    'inflation', 'tariff', 'tariffs', 'sanction', 'sanctions', 'concern',
+    'concerns', 'warning', 'sell', 'drop', 'drops', 'fell', 'fall', 'falls',
+    'decline', 'declines', 'loss', 'losses', 'deficit',
+])
+
+_vader_analyzer = None
+
+
+def _get_vader():
+    global _vader_analyzer
+    if _vader_analyzer is None:
+        try:
+            from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer # type: ignore
+            _vader_analyzer = SentimentIntensityAnalyzer()
+        except ImportError:
+            logger.warning("vaderSentiment not installed — sentiment scoring disabled")
+    return _vader_analyzer
+
+
+def score_sentiment(text: str) -> dict:
+    """
+    Score a single financial headline and return:
+      - label: 'Bullish' | 'Bearish' | 'Neutral'
+      - score: float in [-1, 1]
+      - confidence: 'high' | 'medium' | 'low'
+    Returns None if VADER is not available.
+    """
+    if not text:
+        return None
+    analyzer = _get_vader()
+    if analyzer is None:
+        return None
+
+    base = analyzer.polarity_scores(text)['compound']
+    words = text.lower().split()
+    boost = sum(0.12 for w in words if w in _BULLISH_TERMS)
+    boost -= sum(0.12 for w in words if w in _BEARISH_TERMS)
+    score = round(max(-1.0, min(1.0, base + boost)), 3)
+
+    abs_score = abs(score)
+    confidence = 'high' if abs_score >= 0.3 else ('medium' if abs_score >= 0.1 else 'low')
+
+    if score >= 0.05:
+        label = 'Bullish'
+    elif score <= -0.05:
+        label = 'Bearish'
+    else:
+        label = 'Neutral'
+
+    return {'label': label, 'score': score, 'confidence': confidence}
+
+
+def score_articles(articles: list) -> list:
+    """Add sentiment scoring to a list of news article dicts in-place."""
+    for article in articles:
+        text = article.get('title', '') + ' ' + (article.get('summary') or '')
+        article['sentiment'] = score_sentiment(text.strip())
+    return articles

@@ -123,6 +123,16 @@ function buildArticleCard(article) {
 
   const topRow = el('div', { style: 'display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-3); gap:10px; flex-wrap:wrap;' });
   topRow.appendChild(el('span', { class: 'coach-badge watch' }, [(article.type || 'general').toUpperCase()]));
+
+  // Sentiment badge — only show when confidence is medium or high to avoid
+  // cluttering every card with low-confidence noise
+  if (article.sentiment && article.sentiment.confidence !== 'low') {
+    const s = article.sentiment;
+    const sentClass = s.label === 'Bullish' ? 'good' : s.label === 'Bearish' ? 'alert' : 'watch';
+    const sentIcon = s.label === 'Bullish' ? '▲' : s.label === 'Bearish' ? '▼' : '●';
+    topRow.appendChild(el('span', { class: 'coach-badge ' + sentClass }, [sentIcon + ' ' + s.label]));
+  }
+
   topRow.appendChild(el('span', { style: 'font-size:var(--text-xs); color:var(--muted);' }, [article.publisher || 'Inshorts']));
   link.appendChild(topRow);
 

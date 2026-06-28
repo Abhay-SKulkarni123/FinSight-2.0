@@ -35,5 +35,8 @@ django-redis==5.4.0
 # Error monitoring
 sentry-sdk==2.19.2
 
+# NLP / Sentiment
+vaderSentiment==3.3.2
+
 # Testing
 pytest-django==4.9.0
