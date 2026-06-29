@@ -12,6 +12,10 @@ class Watchlist(models.Model):
     class Meta:
         unique_together = ('user', 'ticker')
         ordering = ['-added_at']
+        indexes = [
+            models.Index(fields=['user', 'ticker']),
+            models.Index(fields=['user', '-added_at']),
+        ]
 
     def __str__(self):
         return f"{self.user.username} — {self.ticker}"
@@ -29,6 +33,10 @@ class UserPortfolio(models.Model):
     class Meta:
         unique_together = ('user', 'ticker')
         ordering = ['-added_at']
+        indexes = [
+            models.Index(fields=['user', 'ticker']),
+            models.Index(fields=['user', '-updated_at']),
+        ]
 
     def __str__(self):
         return f"{self.user.username} — {self.ticker} x{self.quantity}"

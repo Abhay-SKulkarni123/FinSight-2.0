@@ -1,0 +1,116 @@
+"""
+FinSight Constants
+Centralized configuration for magic numbers and default values.
+"""
+
+# API Rate Limits (requests per minute)
+RATE_LIMIT_POST = '10/m'
+RATE_LIMIT_GET = '20/m'
+
+# Cache TTLs (in seconds)
+CACHE_TTL_NEWS = 300       # 5 minutes
+CACHE_TTL_RISK = 600       # 10 minutes
+CACHE_TTL_SCREENER = 180   # 3 minutes
+CACHE_TTL_ANALYSIS = 600   # 10 minutes
+
+# Request Limits
+MAX_HOLDINGS_PER_REQUEST = 15
+MAX_TICKERS_FOR_OPTIMIZATION = 10
+MAX_TICKERS_FOR_COMPARISON = 5
+MAX_TICKERS_FOR_SCREENER = 20
+MAX_TICKERS_FOR_PORTFOLIO = 15
+
+# Investment Amount Limits (USD)
+MIN_INVESTMENT_AMOUNT = 1
+MAX_INVESTMENT_AMOUNT = 1_000_000_000  # 1 billion
+
+# Ticker Validation
+MAX_TICKER_LENGTH = 50
+
+# Pagination
+DEFAULT_PAGE_SIZE = 10
+MAX_PAGE_SIZE = 50
+
+# ML Model Defaults
+ML_DEFAULT_PERIOD = '2y'
+ML_DEFAULT_HORIZON_DAYS = 30
+ML_MIN_TRAINING_SAMPLES = 60
+ML_FEATURE_WINDOW = 50
+
+# Risk Analysis
+RISK_ANALYSIS_PERIOD = '1y'
+RISK_RISK_FREE_RATE = 0.02  # 2% annual
+
+# Portfolio Optimization
+PORTFOLIO_HISTORY_PERIOD = '1y'
+PORTFOLIO_MIN_TICKERS = 2
+PORTFOLIO_MAX_TICKERS = 10
+PORTFOLIO_OPTIMIZATION_ITERATIONS = 5000
+
+# Screener
+SCREENER_DEFAULT_PERIOD = '1mo'
+SCREENER_FALLBACK_COUNT = 5
+
+# News
+NEWS_DEFAULT_LIMIT = 12
+NEWS_FETCH_LIMIT = 4  # Per ticker
+NEWS_MAX_TICKERS_TO_FETCH = 5
+
+# Timeouts (in seconds)
+HTTP_REQUEST_TIMEOUT = 10
+YFINANCE_TIMEOUT = 10
+
+# Supported Values
+SUPPORTED_TIMELINES = ['1d', '1w', '1m', '3m', '6m', '1y']
+SUPPORTED_PERIODS = ['1m', '3m', '6m', '1y']
+SUPPORTED_RISK_TOLERANCES = ['conservative', 'moderate', 'aggressive']
+SUPPORTED_MARKETS = [
+    'stocks', 'crypto', 'indices', 'forex', 'metals',
+    'energy', 'bonds', 'etfs', 'futures', 'commodities',
+    'indian_markets'
+]
+
+# ML Model Hyperparameters
+GBM_N_ESTIMATORS = 200
+GBM_LEARNING_RATE = 0.05
+GBM_MAX_DEPTH = 4
+GBM_SUBSAMPLE = 0.8
+GBM_RANDOM_STATE = 42
+GBM_TEST_SIZE = 0.2
+
+# Technical Indicator Parameters
+RSI_WINDOW = 14
+SMA_SHORT_WINDOW = 5
+SMA_MEDIUM_WINDOW = 10
+SMA_LONG_WINDOW = 20
+SMA_VERY_LONG_WINDOW = 50
+MACD_FAST_SPAN = 12
+MACD_SLOW_SPAN = 26
+MACD_SIGNAL_SPAN = 9
+BOLLINGER_WINDOW = 20
+BOLLINGER_STD_DEV = 2
+VOLUME_MA_WINDOW = 20
+
+# Confidence Scoring
+ML_CONFIDENCE_MIN = 55.0
+ML_CONFIDENCE_MAX = 90.0
+ML_CONFIDENCE_DEFAULT = 75.0
+
+# Dashboard
+DASHBOARD_WATCHLIST_LIMIT = 10
+DASHBOARD_PREDICTIONS_LIMIT = 10
+
+# Model Health
+MODEL_HEALTH_LIMIT_PER_TICKER = 30
+
+# Validation
+VALID_TICKER_PATTERN = r'^[A-Za-z0-9:.^!\-]+$'
+DATE_FORMAT = '%Y-%m-%d'
+TIMESTAMP_FORMAT = '%Y-%m-%dT%H:%M:%S'
+
+# Sentiment Analysis
+SENTIMENT_BULLISH_THRESHOLD = 0.05
+SENTIMENT_BEARISH_THRESHOLD = -0.05
+SENTIMENT_HIGH_CONFIDENCE = 0.3
+SENTIMENT_MEDIUM_CONFIDENCE = 0.1
+SENTIMENT_TERM_BOOST = 0.12

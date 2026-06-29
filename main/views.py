@@ -14,6 +14,21 @@ import pandas as pd
 import numpy as np
 from .ml_models import PricePredictor, RiskAnalyzer, PortfolioOptimizer
 from . import services
+from .utils import (
+    validate_ticker, validate_date, validate_timeline,
+    validate_risk_tolerance, validate_investment_amount,
+    validate_tickers_list, validate_period, validate_market
+)
+from .constants import (
+    RATE_LIMIT_POST, RATE_LIMIT_GET,
+    MAX_HOLDINGS_PER_REQUEST, MAX_TICKERS_FOR_OPTIMIZATION,
+    MAX_TICKERS_FOR_COMPARISON, MAX_TICKERS_FOR_SCREENER,
+    MIN_INVESTMENT_AMOUNT, MAX_INVESTMENT_AMOUNT,
+    HTTP_REQUEST_TIMEOUT, YFINANCE_TIMEOUT,
+    SUPPORTED_TIMELINES, PORTFOLIO_MIN_TICKERS, PORTFOLIO_MAX_TICKERS,
+    DASHBOARD_WATCHLIST_LIMIT, DASHBOARD_PREDICTIONS_LIMIT,
+    NEWS_MAX_TICKERS_TO_FETCH, CACHE_TTL_NEWS
+)
 from django_ratelimit.decorators import ratelimit # type: ignore
 
 # Market definitions with sample tickers - Updated with TradingView-compatible symbols
@@ -489,7 +504,7 @@ def fetch_live_news_from_api(market, limit=12):
             "https://inshortsapi.vercel.app/news",
             params={"category": category},
             headers={"Cache-Control": "no-cache"},
-            timeout=6
+            timeout=HTTP_REQUEST_TIMEOUT
         )
         response.raise_for_status()
         payload = response.json() or {}
@@ -751,9 +766,9 @@ def dashboard(request):
 
     from .models import Watchlist, PredictionHistory, UserPortfolio
 
-    watchlist = Watchlist.objects.filter(user=request.user)[:10]
-    recent_predictions = PredictionHistory.objects.filter(user=request.user).order_by('-created_at')[:10]
-    holdings = UserPortfolio.objects.filter(user=request.user)
+    watchlist = Watchlist.objects.filter(user=request.user).select_related('user')[:DASHBOARD_WATCHLIST_LIMIT]
+    recent_predictions = PredictionHistory.objects.filter(user=request.user).select_related('user').order_by('-created_at')[:DASHBOARD_PREDICTIONS_LIMIT]
+    holdings = UserPortfolio.objects.filter(user=request.user).select_related('user')
 
     holdings_count = holdings.count()
     watchlist_count = watchlist.count()
@@ -854,7 +869,7 @@ def feature_view(request, market, feature_id):
     template = template_map.get(feature_id, "features/prediction.html")
     return render(request, template, context)
 
-@ratelimit(key='ip', rate='10/m', method='POST', block=True)
+@ratelimit(key='ip', rate=RATE_LIMIT_POST, method='POST', block=True)
 @require_http_methods(["POST"])
 def predict_price_api(request):
     """API endpoint for price prediction"""
@@ -865,8 +880,22 @@ def predict_price_api(request):
         timeline = data.get('timeline', '1m')
         market_type = data.get('market_type', 'stocks')
         
-        if not ticker:
-            return JsonResponse({'error': 'Ticker is required'}, status=400)
+        # Validate inputs
+        is_valid, error = validate_ticker(ticker)
+        if not is_valid:
+            return JsonResponse({'error': error}, status=400)
+        
+        is_valid, error = validate_timeline(timeline)
+        if not is_valid:
+            return JsonResponse({'error': error}, status=400)
+        
+        is_valid, error, _ = validate_date(target_date)
+        if not is_valid:
+            return JsonResponse({'error': error}, status=400)
+        
+        is_valid, error = validate_market(market_type)
+        if not is_valid:
+            return JsonResponse({'error': error}, status=400)
         
         # Map timeline to days
         timeline_days = {
@@ -901,7 +930,7 @@ def predict_price_api(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
-@ratelimit(key='ip', rate='10/m', method='POST', block=True)
+@ratelimit(key='ip', rate=RATE_LIMIT_POST, method='POST', block=True)
 @require_http_methods(["POST"])
 def risk_analysis_api(request):
     """API endpoint for risk analysis"""
@@ -910,8 +939,15 @@ def risk_analysis_api(request):
         ticker = data.get('ticker', '')
         market_type = data.get('market_type', '')
         
-        if not ticker:
-            return JsonResponse({'error': 'Ticker is required'}, status=400)
+        # Validate inputs
+        is_valid, error = validate_ticker(ticker)
+        if not is_valid:
+            return JsonResponse({'error': error}, status=400)
+        
+        if market_type:
+            is_valid, error = validate_market(market_type)
+            if not is_valid:
+                return JsonResponse({'error': error}, status=400)
         
         metrics = services.get_risk_analysis(ticker, market_type)
         
@@ -928,7 +964,7 @@ def risk_analysis_api(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
-@ratelimit(key='ip', rate='10/m', method='POST', block=True)
+@ratelimit(key='ip', rate=RATE_LIMIT_POST, method='POST', block=True)
 @require_http_methods(["POST"])
 def optimize_portfolio_api(request):
     """API endpoint for portfolio optimization"""
@@ -936,10 +972,20 @@ def optimize_portfolio_api(request):
         data = json.loads(request.body)
         tickers = data.get('tickers', [])
         risk_tolerance = data.get('risk_tolerance', 'moderate')
-        investment_amount = float(data.get('investment_amount', 100000))
+        investment_amount = data.get('investment_amount', 100000)
         
-        if not tickers or len(tickers) < 2:
-            return JsonResponse({'error': 'At least 2 tickers are required'}, status=400)
+        # Validate inputs
+        is_valid, error = validate_tickers_list(tickers, min_count=PORTFOLIO_MIN_TICKERS, max_count=PORTFOLIO_MAX_TICKERS)
+        if not is_valid:
+            return JsonResponse({'error': error}, status=400)
+        
+        is_valid, error = validate_risk_tolerance(risk_tolerance)
+        if not is_valid:
+            return JsonResponse({'error': error}, status=400)
+        
+        is_valid, error, investment_amount = validate_investment_amount(investment_amount)
+        if not is_valid:
+            return JsonResponse({'error': error}, status=400)
         
         # Clean tickers for yfinance (remove exchange prefixes)
         clean_tickers = [t.split(":")[-1] if ":" in t else t for t in tickers]
@@ -984,7 +1030,7 @@ def market_news_api(request):
         response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
         return response
 
-    tickers = MARKETS[market]['tickers']
+    tickers = MARKETS[market]['tickers'][:NEWS_MAX_TICKERS_TO_FETCH]
     articles = []
     seen_links = set()
 
@@ -1050,7 +1096,7 @@ def market_news_api(request):
     if articles:
         from . import services as svc
         svc.score_articles(articles)
-        cache.set(cache_key, articles, 300)  # 5 min cache
+        cache.set(cache_key, articles, CACHE_TTL_NEWS)
 
     response = JsonResponse({
         'success': bool(articles),
@@ -1070,8 +1116,12 @@ def portfolio_snapshot_api(request):
     try:
         data = json.loads(request.body)
         holdings = data.get('holdings', [])
-        if not holdings:
+        
+        if not holdings or not isinstance(holdings, list):
             return JsonResponse({'error': 'Add at least one holding first.'}, status=400)
+        
+        if len(holdings) > MAX_HOLDINGS_PER_REQUEST:
+            return JsonResponse({'error': f'Maximum {MAX_HOLDINGS_PER_REQUEST} holdings allowed per request'}, status=400)
         
         history_frames = []
         quantity_map = {}
@@ -1079,7 +1129,7 @@ def portfolio_snapshot_api(request):
         total_value = 0.0
         total_cost = 0.0
         
-        for entry in holdings[:15]:
+        for entry in holdings[:MAX_HOLDINGS_PER_REQUEST]:
             ticker = (entry.get('ticker') or '').strip().upper()
             quantity = float(entry.get('quantity') or 0)
             cost_basis = float(entry.get('cost_basis') or 0)
@@ -1092,7 +1142,7 @@ def portfolio_snapshot_api(request):
             
             try:
                 ticker_obj = yf.Ticker(normalized)
-                hist = ticker_obj.history(period='6mo', interval='1d')
+                hist = ticker_obj.history(period='6mo', interval='1d', timeout=YFINANCE_TIMEOUT)
             except Exception:
                 continue
             
@@ -1179,16 +1229,34 @@ def screener_api(request):
         market = data.get('market', 'stocks')
         filters = data.get('filters', {})
         custom_tickers = data.get('tickers') or []
+        
+        # Validate inputs
+        is_valid, error = validate_market(market)
+        if not is_valid:
+            return JsonResponse({'error': error}, status=400)
+        
+        if custom_tickers:
+            is_valid, error = validate_tickers_list(custom_tickers, min_count=1, max_count=MAX_TICKERS_FOR_SCREENER)
+            if not is_valid:
+                return JsonResponse({'error': error}, status=400)
+        
         base = custom_tickers or MARKETS.get(market, MARKETS['stocks'])['tickers']
-        tickers = base[:20]
+        tickers = base[:MAX_TICKERS_FOR_SCREENER]
         results = []
         
-        price_min = float(filters.get('price_min') or 0)
-        price_max = float(filters.get('price_max') or 0)
+        # Validate filter values with safe conversion
+        try:
+            price_min = float(filters.get('price_min') or 0)
+            price_max = float(filters.get('price_max') or 0)
+            pe_min = float(filters.get('pe_min') or 0)
+            pe_max = float(filters.get('pe_max') or 0)
+            div_min = float(filters.get('dividend_min') or 0)
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'Invalid filter values'}, status=400)
+        
         change_filter = filters.get('change_direction')
-        pe_min = float(filters.get('pe_min') or 0)
-        pe_max = float(filters.get('pe_max') or 0)
-        div_min = float(filters.get('dividend_min') or 0)
+        if change_filter and change_filter not in ['gainers', 'losers']:
+            return JsonResponse({'error': 'Invalid change_direction. Must be gainers or losers'}, status=400)
         
         for symbol in tickers:
             normalized = normalize_ticker_for_yfinance(symbol)
@@ -1196,7 +1264,7 @@ def screener_api(request):
                 continue
             try:
                 ticker_obj = yf.Ticker(normalized)
-                hist = ticker_obj.history(period='1mo', interval='1d')
+                hist = ticker_obj.history(period='1mo', interval='1d', timeout=YFINANCE_TIMEOUT)
             except Exception:
                 continue
             if hist.empty or 'Close' not in hist:
@@ -1275,8 +1343,15 @@ def comparison_api(request):
         data = json.loads(request.body)
         tickers = data.get('tickers', [])
         period = data.get('period', '3m')
-        if len(tickers) < 2:
-            return JsonResponse({'error': 'Select at least two tickers to compare.'}, status=400)
+        
+        # Validate inputs
+        is_valid, error = validate_tickers_list(tickers, min_count=PORTFOLIO_MIN_TICKERS, max_count=MAX_TICKERS_FOR_COMPARISON)
+        if not is_valid:
+            return JsonResponse({'error': error}, status=400)
+        
+        is_valid, error = validate_period(period)
+        if not is_valid:
+            return JsonResponse({'error': error}, status=400)
         
         period_map = {
             '1m': ('1mo', '1d'),
@@ -1357,7 +1432,7 @@ def ticker_search_api(request):
         resp = requests.get(
             "https://query2.finance.yahoo.com/v1/finance/search",
             params={"q": query, "quotesCount": 10, "newsCount": 0},
-            timeout=5
+            timeout=HTTP_REQUEST_TIMEOUT
         )
         resp.raise_for_status()
         payload = resp.json() or {}
@@ -1379,7 +1454,7 @@ def ticker_search_api(request):
         return JsonResponse({'success': False, 'results': [], 'error': str(exc)}, status=500)
     
 @require_http_methods(["GET"])
-@ratelimit(key='ip', rate='20/m', method='GET', block=True)
+@ratelimit(key='ip', rate=RATE_LIMIT_GET, method='GET', block=True)
 def market_analysis_api(request, market):
     """Return real, aggregated market analysis (replaces hardcoded template values)."""
     if market not in MARKETS:

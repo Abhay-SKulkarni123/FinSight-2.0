@@ -3,9 +3,9 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: finsight
-      POSTGRES_USER: finsight
-      POSTGRES_PASSWORD: finsight_dev_only
+      POSTGRES_DB: ${POSTGRES_DB:-finsight}
+      POSTGRES_USER: ${POSTGRES_USER:-finsight}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-in-production}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -42,7 +42,7 @@ services:
       SECRET_KEY: ${SECRET_KEY:-docker-dev-secret-change-me}
       DEBUG: ${DEBUG:-True}
       ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0
-      DATABASE_URL: postgres://finsight:finsight_dev_only@db:5432/finsight
+      DATABASE_URL: postgres://${POSTGRES_USER:-finsight}:${POSTGRES_PASSWORD:-change-me-in-production}@db:5432/${POSTGRES_DB:-finsight}
       REDIS_URL: redis://redis:6379/0
     depends_on:
       db:
